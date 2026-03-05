@@ -64,8 +64,7 @@ jobs:
             NEXT_PUBLIC_FIREBASE_APP_ID=${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
             NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY=${{ secrets.NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY }}
             NEXT_PUBLIC_APP_URL=https://shinebuild.sisbios.cloud
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          no-cache: true
 
   deploy:
     name: Deploy to VPS2
