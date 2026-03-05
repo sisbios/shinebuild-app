@@ -1,6 +1,15 @@
 import type { Metadata, Viewport } from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import { ToastProvider } from '@shinebuild/ui';
+import { InstallPrompt } from '@/components/shared/InstallPrompt';
+
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+  preload: true,
+});
 
 export const metadata: Metadata = {
   title: 'Shine Build Hub',
@@ -22,12 +31,12 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-      </head>
-      <body className="bg-gray-50 font-sans antialiased">
-        <ToastProvider>{children}</ToastProvider>
+    <html lang="en" className={inter.variable}>
+      <body className="bg-mesh font-sans antialiased min-h-svh">
+        <ToastProvider>
+          {children}
+          <InstallPrompt />
+        </ToastProvider>
       </body>
     </html>
   );

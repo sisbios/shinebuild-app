@@ -6,59 +6,98 @@ export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboardPage() {
   const db = getAdminDb();
-
-  let totalLeads = 0;
-  let newLeads = 0;
-  let qualifiedLeads = 0;
-  let pendingAgents = 0;
+  let totalLeads = 0, newLeads = 0, qualifiedLeads = 0, pendingAgents = 0, totalStaff = 0;
 
   try {
-    const [leadsSnap, newSnap, qualSnap, pendingSnap] = await Promise.all([
+    const [leadsSnap, newSnap, qualSnap, pendingSnap, staffSnap] = await Promise.all([
       db.collection(COLLECTIONS.LEADS).get(),
       db.collection(COLLECTIONS.LEADS).where('status.current', '==', 'new').get(),
       db.collection(COLLECTIONS.LEADS).where('status.current', '==', 'qualified').get(),
       db.collection(COLLECTIONS.USERS).where('role', '==', 'agent').where('status', '==', 'pending').get(),
+      db.collection(COLLECTIONS.USERS).where('role', '==', 'staff').get(),
     ]);
     totalLeads = leadsSnap.size;
     newLeads = newSnap.size;
     qualifiedLeads = qualSnap.size;
     pendingAgents = pendingSnap.size;
+    totalStaff = staffSnap.size;
   } catch {}
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Stat label="Total Leads" value={totalLeads} />
-        <Stat label="New Leads" value={newLeads} highlight />
-        <Stat label="Qualified" value={qualifiedLeads} />
-        <Stat label="Pending Agents" value={pendingAgents} warning={pendingAgents > 0} />
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+        <p className="text-sm text-gray-500 mt-0.5">Overview of your lead collection platform</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <QuickLink href="/admin/leads" title="Manage Leads" desc="View, assign, and update lead status" />
-        <QuickLink href="/admin/agents" title="Agent Approvals" desc={`${pendingAgents} agent(s) pending approval`} />
-        <QuickLink href="/admin/incentives" title="Incentives" desc="View agent earnings and mark payouts" />
-        <QuickLink href="/admin/staff" title="Staff" desc="Manage staff assignments" />
+      {/* Stats grid */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <StatCard label="Total Leads" value={totalLeads} href="/admin/leads" color="blue" />
+        <StatCard label="New Leads" value={newLeads} href="/admin/leads?status=new" color="orange" highlight />
+        <StatCard label="Qualified" value={qualifiedLeads} href="/admin/leads?status=qualified" color="green" />
+        <StatCard label="Pending Agents" value={pendingAgents} href="/admin/agents" color="amber" warning={pendingAgents > 0} />
+        <StatCard label="Staff" value={totalStaff} href="/admin/staff" color="purple" />
+      </div>
+
+      {/* Quick actions */}
+      <div>
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Quick Actions</h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <QuickLink href="/admin/leads" title="Manage Leads" desc="View, assign & update status" icon="📋" />
+          <QuickLink
+            href="/admin/agents"
+            title="Agent Approvals"
+            desc={pendingAgents > 0 ? `${pendingAgents} pending` : 'All caught up'}
+            icon="👥"
+            badge={pendingAgents > 0 ? pendingAgents : undefined}
+          />
+          <QuickLink href="/admin/staff" title="Staff Management" desc="Add & manage staff" icon="🧑‍💼" />
+          <QuickLink href="/admin/incentives" title="Incentives" desc="Track agent earnings" icon="💰" />
+        </div>
       </div>
     </div>
   );
 }
 
-function Stat({ label, value, highlight, warning }: { label: string; value: number; highlight?: boolean; warning?: boolean }) {
+function StatCard({ label, value, href, color, highlight, warning }: {
+  label: string; value: number; href: string; color: string; highlight?: boolean; warning?: boolean;
+}) {
+  const colors: Record<string, string> = {
+    blue: 'from-blue-500 to-blue-600',
+    orange: 'from-orange-500 to-orange-600',
+    green: 'from-green-500 to-green-600',
+    amber: 'from-amber-500 to-amber-600',
+    purple: 'from-purple-500 to-purple-600',
+  };
   return (
-    <div className={`rounded-xl border p-4 ${highlight ? 'border-orange-200 bg-orange-50' : warning ? 'border-amber-200 bg-amber-50' : 'border-gray-200 bg-white'}`}>
-      <p className={`text-2xl font-bold ${highlight ? 'text-orange-600' : warning ? 'text-amber-700' : 'text-gray-900'}`}>{value}</p>
-      <p className="text-xs text-gray-500 mt-1">{label}</p>
-    </div>
+    <Link href={href} className="glass-card rounded-2xl p-4 hover-lift block">
+      <div className={`h-8 w-8 rounded-xl bg-gradient-to-br ${colors[color]} flex items-center justify-center mb-3 shadow-sm`}>
+        <span className="text-white text-xs font-bold">{value > 99 ? '99+' : value}</span>
+      </div>
+      <p className="text-xl font-bold text-gray-900">{value}</p>
+      <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+    </Link>
   );
 }
 
-function QuickLink({ href, title, desc }: { href: string; title: string; desc: string }) {
+function QuickLink({ href, title, desc, icon, badge }: {
+  href: string; title: string; desc: string; icon: string; badge?: number;
+}) {
   return (
-    <Link href={href} className="rounded-xl border border-gray-200 bg-white p-4 hover:border-orange-300 hover:shadow-sm transition-all">
-      <p className="font-semibold text-gray-900">{title}</p>
-      <p className="text-sm text-gray-500 mt-1">{desc}</p>
+    <Link href={href} className="glass-card rounded-2xl p-4 hover-lift flex items-start gap-3 group">
+      <span className="text-2xl flex-shrink-0">{icon}</span>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <p className="font-semibold text-gray-900 text-sm group-hover:text-orange-600 transition-colors truncate">{title}</p>
+          {badge !== undefined && (
+            <span className="flex-shrink-0 h-5 w-5 rounded-full bg-orange-500 text-white text-xs flex items-center justify-center font-bold">{badge}</span>
+          )}
+        </div>
+        <p className="text-xs text-gray-500 mt-0.5 truncate">{desc}</p>
+      </div>
+      <svg className="h-4 w-4 text-gray-300 group-hover:text-orange-400 transition-colors flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+      </svg>
     </Link>
   );
 }
