@@ -21,7 +21,6 @@ export default async function AdminAgentsPage() {
     const snap = await db
       .collection(COLLECTIONS.USERS)
       .where('role', '==', 'agent')
-      .orderBy('createdAt', 'desc')
       .limit(100)
       .get();
 
@@ -36,7 +35,10 @@ export default async function AdminAgentsPage() {
         createdAt: d['createdAt']?.toDate() ?? new Date(),
       };
     });
-  } catch {}
+    agents.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  } catch (err) {
+    console.error('AdminAgentsPage error:', err);
+  }
 
   return (
     <div className="space-y-4">
