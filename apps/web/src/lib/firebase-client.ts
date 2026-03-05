@@ -2,7 +2,6 @@ import { initializeApp, getApps, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getStorage, type FirebaseStorage } from 'firebase/storage';
-import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
@@ -23,19 +22,7 @@ function getFirebaseApp(): FirebaseApp {
     const existing = getApps()[0];
     app = existing ?? initializeApp(firebaseConfig);
 
-    // App Check — only in browser, skip in test/emulator
-    if (
-      typeof window !== 'undefined' &&
-      process.env.NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY &&
-      process.env.NODE_ENV !== 'test'
-    ) {
-      initializeAppCheck(app, {
-        provider: new ReCaptchaV3Provider(
-          process.env.NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY
-        ),
-        isTokenAutoRefreshEnabled: true,
-      });
-    }
+    // App Check — disabled until properly configured in Firebase Console
   }
   return app;
 }
