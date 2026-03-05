@@ -25,6 +25,7 @@ export async function submitAgentLead(input: AgentLeadInput): Promise<SubmitResu
     const { getAdminDb } = await import('@/lib/firebase-server');
     const { FieldValue } = await import('firebase-admin/firestore');
     const { maskName, maskPhone, sha256Hex } = await import('@shinebuild/shared');
+    const { getNextStaffRoundRobin } = await import('@/lib/round-robin');
 
     const db = getAdminDb();
 
@@ -38,7 +39,7 @@ export async function submitAgentLead(input: AgentLeadInput): Promise<SubmitResu
     await leadRef.set({
       source: 'agent_direct',
       agentId: session.uid,
-      assignedStaffIds: [],
+      assignedStaffIds: await getNextStaffRoundRobin().then((s) => s ? [s] : []).catch(() => []),
       customer: { name: '', phoneE164: '', email: null },
       requirementNotes: input.requirementNotes,
       city: input.city,

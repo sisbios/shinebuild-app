@@ -4,6 +4,7 @@ import { getAdminDb } from '@/lib/firebase-server';
 import { sha256Hex, maskName, maskPhone, maskEmail } from '@shinebuild/shared';
 import { COLLECTIONS } from '@shinebuild/firebase';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { getNextStaffRoundRobin } from '@/lib/round-robin';
 
 interface ValidationResult {
   error?: 'not-found' | 'expired' | 'used';
@@ -130,7 +131,7 @@ export async function submitQrLead(input: SubmitQrLeadInput): Promise<SubmitQrLe
       source: 'qr_self_entry',
       agentId,
       qrTokenId: input.tokenId,
-      assignedStaffIds: [],
+      assignedStaffIds: await getNextStaffRoundRobin().then((s) => s ? [s] : []).catch(() => []),
       customer: {
         name: input.name,
         phoneE164: input.phone,
