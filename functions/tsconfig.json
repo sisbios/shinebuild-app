@@ -1,0 +1,16 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "outDir": "./lib",
+    "rootDir": "./src",
+    "lib": ["ES2022"],
+    "paths": {
+      "@shinebuild/shared": ["../packages/shared/src/index.ts"],
+      "@shinebuild/shared/*": ["../packages/shared/src/*"]
+    }
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "lib", "**/*.test.ts"]
+}

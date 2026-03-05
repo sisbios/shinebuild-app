@@ -1,0 +1,24 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["dom", "dom.iterable", "ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [{ "name": "next" }],
+    "paths": {
+      "@/*": ["./src/*"],
+      "@shinebuild/shared": ["../../packages/shared/src/index.ts"],
+      "@shinebuild/shared/*": ["../../packages/shared/src/*"],
+      "@shinebuild/ui": ["../../packages/ui/src/index.ts"],
+      "@shinebuild/ui/*": ["../../packages/ui/src/*"],
+      "@shinebuild/firebase": ["../../packages/firebase/src/index.ts"],
+      "@shinebuild/firebase/*": ["../../packages/firebase/src/*"]
+    },
+    "outDir": ".next"
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}

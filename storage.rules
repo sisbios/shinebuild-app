@@ -1,0 +1,32 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAuthed() { return request.auth != null; }
+    function uid()      { return request.auth.uid; }
+    function role()     { return request.auth.token.role; }
+
+    // Lead photos — written by Cloud Function (admin SDK), read by admin/staff
+    match /leads/{leadId}/photos/{photoId} {
+      allow read:  if isAuthed() && role() in ['admin','superadmin','staff'];
+      allow write: if false; // Cloud Functions only
+    }
+
+    // Agent ID proof documents
+    match /agents/{agentId}/id-proof/{docId} {
+      allow read:  if isAuthed() && (
+                     request.auth.uid == agentId
+                     || role() in ['admin','superadmin']
+                   );
+      allow write: if isAuthed() && request.auth.uid == agentId
+                   && request.resource.size < 5 * 1024 * 1024 // 5MB limit
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Export reports — admin SDK writes, superadmin reads
+    match /exports/{exportId} {
+      allow read:  if isAuthed() && role() == 'superadmin';
+      allow write: if false;
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "@shinebuild/firebase",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "build": "echo 'Firebase package imported directly by web app'"
+  },
+  "dependencies": {
+    "firebase": "^11.0.0"
+  },
+  "peerDependencies": {
+    "firebase-admin": "^13.0.0"
+  },
+  "peerDependenciesMeta": {
+    "firebase-admin": { "optional": true }
+  },
+  "devDependencies": {
+    "firebase-admin": "^13.0.0",
+    "typescript": "^5.5.0"
+  }
+}

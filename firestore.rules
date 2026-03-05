@@ -1,0 +1,62 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthed()       { return request.auth != null; }
+    function uid()            { return request.auth.uid; }
+    function role()           { return request.auth.token.role; }
+    function isRole(r)        { return isAuthed() && role() == r; }
+    function isAdminOrSuper() { return isAuthed() && role() in ['admin','superadmin']; }
+    function isOwner(id)      { return isAuthed() && uid() == id; }
+    function isApprovedAgent() {
+      return isRole('agent') && request.auth.token.status == 'approved';
+    }
+
+    match /users/{userId} {
+      allow read:   if isOwner(userId) || isAdminOrSuper();
+      allow create: if isOwner(userId)
+                    && request.resource.data.role == 'agent'
+                    && request.resource.data.status == 'pending';
+      allow update, delete: if false; // Cloud Functions (admin SDK) only
+    }
+
+    match /leads/{leadId} {
+      // Agents CANNOT read full lead docs
+      allow read:  if isAdminOrSuper()
+                   || (isRole('staff')
+                       && uid() in resource.data.assignedStaffIds);
+      allow write: if false; // Cloud Functions only
+
+      match /agentView/{docId} {
+        // Agent reads ONLY their own masked view
+        allow read:  if isApprovedAgent()
+                     && resource.data.agentId == uid();
+        allow write: if false; // Cloud Functions only
+      }
+    }
+
+    match /qrTokens/{tokenId} {
+      allow read, write: if false; // Cloud Functions only
+    }
+
+    match /incentiveLedger/{agentId} {
+      allow read:  if isOwner(agentId) || isAdminOrSuper();
+      allow write: if false;
+
+      match /transactions/{txId} {
+        allow read:  if isOwner(agentId) || isAdminOrSuper();
+        allow write: if false;
+      }
+    }
+
+    match /incentiveRules/{ruleId} {
+      allow read:  if isAuthed();
+      allow write: if isRole('superadmin');
+    }
+
+    match /audits/{auditId} {
+      allow read:  if isRole('superadmin');
+      allow write: if false;
+    }
+  }
+}
