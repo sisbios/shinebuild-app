@@ -71,7 +71,12 @@ jobs:
           IMAGE_TAG: sha-${{ needs.build-and-push.outputs.sha_short }}
           GHCR_PAT: ${{ secrets.GHCR_PAT }}
           NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
           NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
+          NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY }}
           FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
           FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
           COOKIE_SECRET_CURRENT: ${{ secrets.COOKIE_SECRET_CURRENT }}
@@ -80,37 +85,42 @@ jobs:
           host: 72.62.4.146
           username: root
           password: ${{ secrets.VPS2_SSH_PASSWORD }}
-          envs: IMAGE_TAG,GHCR_PAT,NEXT_PUBLIC_FIREBASE_API_KEY,NEXT_PUBLIC_FIREBASE_PROJECT_ID,FIREBASE_CLIENT_EMAIL,FIREBASE_PRIVATE_KEY,COOKIE_SECRET_CURRENT,COOKIE_SECRET_PREVIOUS
+          envs: IMAGE_TAG,GHCR_PAT,NEXT_PUBLIC_FIREBASE_API_KEY,NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,NEXT_PUBLIC_FIREBASE_PROJECT_ID,NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,NEXT_PUBLIC_FIREBASE_APP_ID,NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY,FIREBASE_CLIENT_EMAIL,FIREBASE_PRIVATE_KEY,COOKIE_SECRET_CURRENT,COOKIE_SECRET_PREVIOUS
           script: |
-            # Pull new image
+            set -e
             echo "$GHCR_PAT" | docker login ghcr.io -u sisbios --password-stdin
             docker pull ghcr.io/sisbios/shinebuild-app:${IMAGE_TAG}
 
-            # Update .env
             cd /root/shinebuild
-            cat > .env <<EOF
-            NEXT_PUBLIC_FIREBASE_API_KEY=${NEXT_PUBLIC_FIREBASE_API_KEY}
-            NEXT_PUBLIC_FIREBASE_PROJECT_ID=${NEXT_PUBLIC_FIREBASE_PROJECT_ID}
-            FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
-            FIREBASE_PRIVATE_KEY="${FIREBASE_PRIVATE_KEY}"
-            COOKIE_SECRET_CURRENT=${COOKIE_SECRET_CURRENT}
-            COOKIE_SECRET_PREVIOUS=${COOKIE_SECRET_PREVIOUS}
-            NODE_ENV=production
-            EOF
+            printf '%s\n' \
+              "NEXT_PUBLIC_FIREBASE_API_KEY=${NEXT_PUBLIC_FIREBASE_API_KEY}" \
+              "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}" \
+              "NEXT_PUBLIC_FIREBASE_PROJECT_ID=${NEXT_PUBLIC_FIREBASE_PROJECT_ID}" \
+              "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}" \
+              "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}" \
+              "NEXT_PUBLIC_FIREBASE_APP_ID=${NEXT_PUBLIC_FIREBASE_APP_ID}" \
+              "NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY=${NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY}" \
+              "FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}" \
+              "FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}" \
+              "COOKIE_SECRET_CURRENT=${COOKIE_SECRET_CURRENT}" \
+              "COOKIE_SECRET_PREVIOUS=${COOKIE_SECRET_PREVIOUS}" \
+              "NODE_ENV=production" \
+              "HOSTNAME=0.0.0.0" \
+              "PORT=3000" \
+              "NEXT_TELEMETRY_DISABLED=1" \
+              > .env
 
-            # Restart container
             IMAGE_TAG=${IMAGE_TAG} docker compose up -d --force-recreate
 
-            # Health check (retry 5x)
             for i in $(seq 1 5); do
-              sleep 5
+              sleep 8
               STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/api/health || echo "000")
-              echo "Health check attempt $i: HTTP $STATUS"
+              echo "Health check $i: HTTP $STATUS"
               if [ "$STATUS" = "200" ]; then
                 echo "Deployment successful!"
                 exit 0
               fi
             done
-            echo "Health check failed after 5 attempts"
+            echo "Health check failed"
             docker logs --tail=50 shinebuild
             exit 1
