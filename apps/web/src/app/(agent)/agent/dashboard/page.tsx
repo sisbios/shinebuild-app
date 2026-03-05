@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { getServerSession } from '@/lib/session';
 import { getAdminDb } from '@/lib/firebase-server';
 import Link from 'next/link';
@@ -16,17 +18,15 @@ export default async function AgentDashboardPage() {
     const leadsSnap = await db
       .collectionGroup(COLLECTIONS.AGENT_VIEW)
       .where('agentId', '==', session!.uid)
-      .count()
       .get();
-    totalLeads = leadsSnap.data().count;
+    totalLeads = leadsSnap.size;
 
     const qualifiedSnap = await db
       .collectionGroup(COLLECTIONS.AGENT_VIEW)
       .where('agentId', '==', session!.uid)
       .where('status', 'in', ['qualified', 'converted'])
-      .count()
       .get();
-    qualifiedLeads = qualifiedSnap.data().count;
+    qualifiedLeads = qualifiedSnap.size;
 
     const ledgerSnap = await db.collection(COLLECTIONS.INCENTIVE_LEDGER).doc(session!.uid).get();
     if (ledgerSnap.exists) {

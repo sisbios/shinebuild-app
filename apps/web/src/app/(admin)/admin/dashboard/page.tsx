@@ -14,15 +14,15 @@ export default async function AdminDashboardPage() {
 
   try {
     const [leadsSnap, newSnap, qualSnap, pendingSnap] = await Promise.all([
-      db.collection(COLLECTIONS.LEADS).count().get(),
-      db.collection(COLLECTIONS.LEADS).where('status.current', '==', 'new').count().get(),
-      db.collection(COLLECTIONS.LEADS).where('status.current', '==', 'qualified').count().get(),
-      db.collection(COLLECTIONS.USERS).where('role', '==', 'agent').where('status', '==', 'pending').count().get(),
+      db.collection(COLLECTIONS.LEADS).get(),
+      db.collection(COLLECTIONS.LEADS).where('status.current', '==', 'new').get(),
+      db.collection(COLLECTIONS.LEADS).where('status.current', '==', 'qualified').get(),
+      db.collection(COLLECTIONS.USERS).where('role', '==', 'agent').where('status', '==', 'pending').get(),
     ]);
-    totalLeads = leadsSnap.data().count;
-    newLeads = newSnap.data().count;
-    qualifiedLeads = qualSnap.data().count;
-    pendingAgents = pendingSnap.data().count;
+    totalLeads = leadsSnap.size;
+    newLeads = newSnap.size;
+    qualifiedLeads = qualSnap.size;
+    pendingAgents = pendingSnap.size;
   } catch {}
 
   return (

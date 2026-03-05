@@ -4,6 +4,35 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   // Required for npm workspaces to include package symlinks
   outputFileTracingRoot: require('path').join(__dirname, '../../'),
+  // Transpile workspace packages so webpack processes their TypeScript source
+  transpilePackages: ['@shinebuild/shared', '@shinebuild/ui', '@shinebuild/firebase'],
+  webpack: (config: any, { isServer, webpack: wp }: { isServer: boolean; webpack: any }) => {
+    // Allow .js extensions in TypeScript ESM imports to resolve to .ts/.tsx files
+    config.resolve.extensionAlias = {
+      '.js': ['.ts', '.tsx', '.js'],
+      '.jsx': ['.tsx', '.jsx'],
+    };
+    // Strip node: prefix so webpack can resolve built-ins normally.
+    // This runs before scheme resolution, unlike resolve.alias.
+    config.plugins.push(
+      new wp.NormalModuleReplacementPlugin(/^node:/, (resource: any) => {
+        resource.request = resource.request.replace(/^node:/, '');
+      })
+    );
+    if (!isServer) {
+      // Server-only node built-ins → empty modules on client (never called from browser)
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        crypto: false,
+        path: false,
+        buffer: false,
+        fs: false,
+        net: false,
+        tls: false,
+      };
+    }
+    return config;
+  },
   experimental: {
     serverActions: {
       allowedOrigins: [

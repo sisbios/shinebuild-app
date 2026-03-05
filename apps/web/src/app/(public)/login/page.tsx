@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { LoginClient } from './LoginClient';
 
 export default function LoginPage() {
@@ -15,7 +16,9 @@ export default function LoginPage() {
           <p className="text-sm text-gray-500">Sign in with your registered mobile</p>
         </div>
         <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-          <LoginClient />
+          <Suspense>
+            <LoginClient />
+          </Suspense>
         </div>
       </div>
     </main>

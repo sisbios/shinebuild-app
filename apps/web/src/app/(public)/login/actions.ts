@@ -1,7 +1,7 @@
 'use server';
 
-import { cookies } from 'next/headers';
-import { createSessionCookie } from 'next-firebase-auth-edge';
+import { cookies, headers } from 'next/headers';
+import { refreshCookiesWithIdToken } from 'next-firebase-auth-edge/next/cookies';
 import { AUTH_EDGE_CONFIG } from '@/lib/auth-edge';
 import { getAdminAuth } from '@/lib/firebase-server';
 
@@ -12,20 +12,20 @@ interface SessionResult {
 
 export async function createSession(idToken: string): Promise<SessionResult> {
   try {
-    // Verify token and get claims
     const auth = getAdminAuth();
     const decoded = await auth.verifyIdToken(idToken);
     const role = decoded['role'] as string | undefined;
 
-    // Create signed session cookie (12h)
-    const sessionCookie = await createSessionCookie(idToken, {
-      ...AUTH_EDGE_CONFIG,
-      expiresIn: 60 * 60 * 12 * 1000, // ms
-    });
-
+    // Set auth cookies using next-firebase-auth-edge
     const cookieStore = await cookies();
-    cookieStore.set(AUTH_EDGE_CONFIG.cookieName, sessionCookie, {
-      ...AUTH_EDGE_CONFIG.cookieSerializeOptions,
+    const headerStore = await headers();
+    // Build a Headers object from the incoming headers
+    const reqHeaders = new Headers();
+    headerStore.forEach((value, key) => reqHeaders.set(key, value));
+
+    await refreshCookiesWithIdToken(idToken, reqHeaders, cookieStore, {
+      ...AUTH_EDGE_CONFIG,
+      cookieName: AUTH_EDGE_CONFIG.cookieName,
     });
 
     // Update lastLoginAt in Firestore (fire & forget)
@@ -50,4 +50,8 @@ export async function createSession(idToken: string): Promise<SessionResult> {
 export async function destroySession(): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.delete(AUTH_EDGE_CONFIG.cookieName);
+  // Also delete any multi-cookie variants (e.g. .0, .1, .2)
+  for (let i = 0; i < 5; i++) {
+    cookieStore.delete(`${AUTH_EDGE_CONFIG.cookieName}.${i}`);
+  }
 }

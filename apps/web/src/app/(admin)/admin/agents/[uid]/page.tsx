@@ -37,9 +37,8 @@ export default async function AdminAgentDetailPage({ params }: Props) {
     const countSnap = await db
       .collection(COLLECTIONS.LEADS)
       .where('agentId', '==', uid)
-      .count()
       .get();
-    leadCount = countSnap.data().count;
+    leadCount = countSnap.size;
   } catch {}
 
   return (

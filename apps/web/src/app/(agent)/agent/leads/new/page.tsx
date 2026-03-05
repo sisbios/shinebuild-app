@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { getServerSession } from '@/lib/session';
 import { LeadForm } from '@/components/leads/LeadForm';
 import Link from 'next/link';

@@ -28,7 +28,8 @@ describe('maskPhone', () => {
   });
   it('shows 2 visible digits at start and end of local part', () => {
     const result = maskPhone('+919999900001');
-    expect(result).toBe('+91 99*****01');
+    // +91 prefix, local=9999900001 (10 digits), 2 visible start + 6 masked + 2 visible end
+    expect(result).toBe('+91 99******01');
   });
   it('handles +1 US number', () => {
     const result = maskPhone('+12125551234');

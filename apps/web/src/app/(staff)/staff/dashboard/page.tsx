@@ -15,9 +15,8 @@ export default async function StaffDashboardPage() {
       .collection(COLLECTIONS.LEADS)
       .where('assignedStaffIds', 'array-contains', session!.uid)
       .where('status.current', 'in', ['new', 'contacted'])
-      .count()
       .get();
-    assignedCount = snap.data().count;
+    assignedCount = snap.size;
   } catch {}
 
   return (

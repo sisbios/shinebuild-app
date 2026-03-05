@@ -52,7 +52,7 @@ export function QrLeadFlow({ tokenId }: Props) {
         tokenId,
         name,
         phone: e164,
-        email: email || undefined,
+        ...(email ? { email } : {}),
         requirementNotes,
         city,
       });

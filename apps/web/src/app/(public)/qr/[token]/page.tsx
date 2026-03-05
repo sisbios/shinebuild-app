@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { QrLeadFlow } from './QrLeadFlow';
 import { validateQrToken } from './actions';
 

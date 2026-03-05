@@ -25,6 +25,12 @@
     "eslint": "^9.0.0",
     "prettier": "^3.3.0",
     "typescript": "^5.5.0",
-    "vitest": "^2.0.0"
+    "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "next": "15.5.12"
+  },
+  "overrides": {
+    "firebase-admin": "^13.0.0"
   }
 }

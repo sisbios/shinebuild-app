@@ -19,21 +19,21 @@ export default async function SuperAdminReportsPage() {
   try {
     const [leadsSnap, qualSnap, convSnap, agentsSnap, approvedSnap, ledgerSnap] =
       await Promise.all([
-        db.collection(COLLECTIONS.LEADS).count().get(),
-        db.collection(COLLECTIONS.LEADS).where('status.current', '==', 'qualified').count().get(),
-        db.collection(COLLECTIONS.LEADS).where('status.current', '==', 'converted').count().get(),
-        db.collection(COLLECTIONS.USERS).where('role', '==', 'agent').count().get(),
-        db.collection(COLLECTIONS.USERS).where('role', '==', 'agent').where('status', '==', 'approved').count().get(),
+        db.collection(COLLECTIONS.LEADS).get(),
+        db.collection(COLLECTIONS.LEADS).where('status.current', '==', 'qualified').get(),
+        db.collection(COLLECTIONS.LEADS).where('status.current', '==', 'converted').get(),
+        db.collection(COLLECTIONS.USERS).where('role', '==', 'agent').get(),
+        db.collection(COLLECTIONS.USERS).where('role', '==', 'agent').where('status', '==', 'approved').get(),
         db.collection(COLLECTIONS.INCENTIVE_LEDGER).get(),
       ]);
 
-    stats.totalLeads = leadsSnap.data().count;
-    stats.qualifiedLeads = qualSnap.data().count;
-    stats.convertedLeads = convSnap.data().count;
-    stats.totalAgents = agentsSnap.data().count;
-    stats.approvedAgents = approvedSnap.data().count;
+    stats.totalLeads = leadsSnap.size;
+    stats.qualifiedLeads = qualSnap.size;
+    stats.convertedLeads = convSnap.size;
+    stats.totalAgents = agentsSnap.size;
+    stats.approvedAgents = approvedSnap.size;
     stats.totalIncentivesPaid = ledgerSnap.docs.reduce(
-      (sum, doc) => sum + (doc.data()['totalRedeemed'] ?? 0),
+      (sum: number, doc) => sum + ((doc.data()['totalRedeemed'] as number) ?? 0),
       0
     );
   } catch {}

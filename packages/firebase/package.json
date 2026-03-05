@@ -12,16 +12,20 @@
     "build": "echo 'Firebase package imported directly by web app'"
   },
   "dependencies": {
-    "firebase": "^11.0.0"
+    "firebase": "^11.0.0",
+    "next": "15.5.12",
+    "vitest": "4.0.18"
   },
   "peerDependencies": {
-    "firebase-admin": "^13.0.0"
+    "firebase-admin": "^10.3.0"
   },
   "peerDependenciesMeta": {
-    "firebase-admin": { "optional": true }
+    "firebase-admin": {
+      "optional": true
+    }
   },
   "devDependencies": {
-    "firebase-admin": "^13.0.0",
+    "firebase-admin": "^10.3.0",
     "typescript": "^5.5.0"
   }
 }
