@@ -14,7 +14,9 @@ export async function uploadLeadPhoto(
   try {
     const buffer = Buffer.from(base64Data, 'base64');
     const storagePath = `leads/${leadDraftId}/photos/${Date.now()}_${fileName.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-    const bucket = getAdminStorage().bucket();
+    const bucketName = process.env.FIREBASE_STORAGE_BUCKET
+      || process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+    const bucket = getAdminStorage().bucket(bucketName);
     const file = bucket.file(storagePath);
     await file.save(buffer, { contentType: 'image/jpeg', resumable: false });
     return { path: storagePath };
