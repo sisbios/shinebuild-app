@@ -23,7 +23,7 @@ export async function submitAgentLead(input: AgentLeadInput): Promise<SubmitResu
     // In production this calls the deployed Cloud Function
     // For now we call Firestore directly as server action
     const { getAdminDb } = await import('@/lib/firebase-server');
-    const { FieldValue } = await import('firebase-admin/firestore');
+    const { FieldValue, Timestamp } = await import('firebase-admin/firestore');
     const { maskName, maskPhone, sha256Hex } = await import('@shinebuild/shared');
     const { getNextStaffRoundRobin } = await import('@/lib/round-robin');
 
@@ -47,7 +47,7 @@ export async function submitAgentLead(input: AgentLeadInput): Promise<SubmitResu
       photos: input.photoStoragePaths,
       status: {
         current: 'new',
-        history: [{ status: 'new', at: now, by: session.uid }],
+        history: [{ status: 'new', at: Timestamp.now(), by: session.uid }],
       },
       incentive: null,
       createdAt: now,

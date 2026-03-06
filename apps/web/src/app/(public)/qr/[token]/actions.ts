@@ -123,6 +123,7 @@ export async function submitQrLead(input: SubmitQrLeadInput): Promise<SubmitQrLe
     const leadId = leadRef.id;
     const referenceId = leadId.slice(-6).toUpperCase();
     const now = FieldValue.serverTimestamp();
+    const nowTs = Timestamp.now();
 
     const isDuplicate = !dupSnap.empty;
     const duplicateOfLeadId = isDuplicate ? dupSnap.docs[0]!.id : undefined;
@@ -144,7 +145,7 @@ export async function submitQrLead(input: SubmitQrLeadInput): Promise<SubmitQrLe
       ...(duplicateOfLeadId ? { duplicateOfLeadId } : {}),
       status: {
         current: isDuplicate ? 'duplicate' : 'new',
-        history: [{ status: isDuplicate ? 'duplicate' : 'new', at: now, by: agentId }],
+        history: [{ status: isDuplicate ? 'duplicate' : 'new', at: nowTs, by: agentId }],
       },
       incentive: null,
       createdAt: now,
