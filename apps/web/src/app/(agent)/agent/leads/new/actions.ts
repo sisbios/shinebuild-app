@@ -3,10 +3,79 @@
 import { getServerSession } from '@/lib/session';
 import { AgentLeadSchema } from '@shinebuild/shared';
 import type { AgentLeadInput } from '@shinebuild/shared';
+import type { GeoData } from '@/components/shared/GeoCapture';
 
 interface SubmitResult {
   error?: string;
   leadId?: string;
+}
+
+// Generate QR token for new lead entry
+export async function generateQrForNewLead() {
+  const { generateQrTokenAction } = await import('@/app/(agent)/agent/qr/actions');
+  return generateQrTokenAction();
+}
+
+// Poll: check if customer filled the QR form and a lead was created
+export async function checkLeadFromToken(tokenId: string): Promise<{ leadId?: string }> {
+  const session = await getServerSession();
+  if (!session || session.role !== 'agent') return {};
+  try {
+    const { getAdminDb } = await import('@/lib/firebase-server');
+    const { COLLECTIONS } = await import('@shinebuild/firebase');
+    const db = getAdminDb();
+    const snap = await db.collection(COLLECTIONS.LEADS)
+      .where('qrTokenId', '==', tokenId)
+      .where('agentId', '==', session.uid)
+      .limit(1)
+      .get();
+    if (snap.empty) return {};
+    return { leadId: snap.docs[0]!.id };
+  } catch { return {}; }
+}
+
+// Fetch service items for the checklist
+export async function getServiceItems(): Promise<Array<{ id: string; name: string }>> {
+  try {
+    const { getAdminDb } = await import('@/lib/firebase-server');
+    const { COLLECTIONS } = await import('@shinebuild/firebase');
+    const db = getAdminDb();
+    const snap = await db.collection(COLLECTIONS.SERVICE_ITEMS)
+      .where('active', '==', true)
+      .orderBy('order', 'asc')
+      .get();
+    return snap.docs.map((d) => ({ id: d.id, name: d.data()['name'] as string }));
+  } catch { return []; }
+}
+
+// Step 2: Agent completes lead with geo, photos, services, notes
+export async function completeAgentLeadDetails(
+  leadId: string,
+  details: { geo: GeoData; photos: string[]; services: string[]; agentNotes: string }
+): Promise<{ error?: string }> {
+  const session = await getServerSession();
+  if (!session || session.role !== 'agent') return { error: 'Unauthorized' };
+  try {
+    const { getAdminDb } = await import('@/lib/firebase-server');
+    const { COLLECTIONS } = await import('@shinebuild/firebase');
+    const { FieldValue } = await import('firebase-admin/firestore');
+    const db = getAdminDb();
+    const leadRef = db.collection(COLLECTIONS.LEADS).doc(leadId);
+    const snap = await leadRef.get();
+    if (!snap.exists) return { error: 'Lead not found' };
+    if (snap.data()!['agentId'] !== session.uid) return { error: 'Unauthorized' };
+    await leadRef.update({
+      geo: details.geo,
+      photos: details.photos,
+      services: details.services,
+      agentNotes: details.agentNotes,
+      agentDetailsAt: FieldValue.serverTimestamp(),
+    });
+    return {};
+  } catch (err: any) {
+    console.error('completeAgentLeadDetails error:', err);
+    return { error: 'Failed to save details. Please try again.' };
+  }
 }
 
 export async function submitAgentLead(input: AgentLeadInput): Promise<SubmitResult> {

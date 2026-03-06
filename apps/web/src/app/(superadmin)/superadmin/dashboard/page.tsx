@@ -208,6 +208,7 @@ export default async function SuperAdminDashboardPage() {
             { href: '/admin/agents', label: 'Agents' },
             { href: '/admin/staff', label: 'Staff' },
             { href: '/superadmin/reports', label: 'Export Reports' },
+            { href: '/superadmin/settings/services', label: 'Services List' },
             { href: '/superadmin/settings/incentive-rules', label: 'Incentive Rules' },
             { href: '/admin/incentives', label: 'Incentive Ledger' },
           ].map((a) => (

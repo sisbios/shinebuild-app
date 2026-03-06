@@ -142,6 +142,8 @@ export async function submitQrLead(input: SubmitQrLeadInput): Promise<SubmitQrLe
       city: input.city,
       geo: null,
       photos: [],
+      services: [],
+      agentNotes: '',
       ...(duplicateOfLeadId ? { duplicateOfLeadId } : {}),
       status: {
         current: isDuplicate ? 'duplicate' : 'new',

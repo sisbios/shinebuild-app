@@ -19,4 +19,5 @@ export const COLLECTIONS = {
   INCENTIVE_LEDGER_TRANSACTIONS: 'transactions',
   INCENTIVE_RULES: 'incentiveRules',
   AUDITS: 'audits',
+  SERVICE_ITEMS: 'serviceItems',
 } as const;

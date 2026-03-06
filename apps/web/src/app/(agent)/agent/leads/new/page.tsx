@@ -1,11 +1,23 @@
 export const dynamic = 'force-dynamic';
 
 import { getServerSession } from '@/lib/session';
-import { LeadForm } from '@/components/leads/LeadForm';
+import { getAdminDb } from '@/lib/firebase-server';
+import { COLLECTIONS } from '@shinebuild/firebase';
 import Link from 'next/link';
+import { NewLeadFlow } from './NewLeadFlow';
 
 export default async function NewLeadPage() {
   const session = await getServerSession();
+  const db = getAdminDb();
+
+  let serviceItems: Array<{ id: string; name: string }> = [];
+  try {
+    const snap = await db.collection(COLLECTIONS.SERVICE_ITEMS)
+      .where('active', '==', true)
+      .orderBy('order', 'asc')
+      .get();
+    serviceItems = snap.docs.map((d) => ({ id: d.id, name: d.data()['name'] as string }));
+  } catch { /* empty collection or no index yet */ }
 
   return (
     <div className="px-4 py-6 space-y-5">
@@ -18,13 +30,7 @@ export default async function NewLeadPage() {
         <h1 className="text-xl font-bold text-gray-900">New Lead</h1>
       </div>
 
-      <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
-        <p className="text-xs text-amber-800">
-          Customer details are collected securely. You will only see a masked reference.
-        </p>
-      </div>
-
-      <LeadForm agentId={session!.uid} />
+      <NewLeadFlow agentId={session!.uid} serviceItems={serviceItems} />
     </div>
   );
 }
