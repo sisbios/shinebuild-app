@@ -11,7 +11,7 @@ interface SubmitResult {
 }
 
 // Generate QR token for new lead entry
-export async function generateQrForNewLead() {
+export async function generateQrForNewLead(): Promise<{ error?: string; qrUrl?: string; tokenId?: string }> {
   const { generateQrTokenAction } = await import('@/app/(agent)/agent/qr/actions');
   return generateQrTokenAction();
 }
