@@ -34,7 +34,6 @@ export default async function AdminStaffPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Staff Management</h1>
@@ -43,15 +42,46 @@ export default async function AdminStaffPage() {
         <AddStaffForm />
       </div>
 
-      {/* Table */}
-      <div className="glass-card rounded-2xl overflow-hidden">
+      {/* Mobile cards */}
+      <div className="space-y-3 sm:hidden">
+        {staff.length === 0 ? (
+          <p className="py-10 text-center text-gray-400 text-sm">No staff members yet. Add one above.</p>
+        ) : staff.map((s) => (
+          <div key={s.uid} className="glass-card rounded-2xl p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="h-10 w-10 rounded-full brand-gradient flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                  {s.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-900 truncate">{s.name}</p>
+                  <p className="text-xs text-gray-500">{s.phone}</p>
+                </div>
+              </div>
+              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold flex-shrink-0 ${
+                s.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+              }`}>{s.status}</span>
+            </div>
+            <div className="mt-3 flex items-center justify-between">
+              <div className="flex items-center gap-3 text-xs text-gray-500">
+                <Link href={`/admin/leads?assignedStaff=${s.uid}`} className="text-red-700 font-medium">{s.leadCount} leads</Link>
+                <span>{s.createdAt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
+              </div>
+              <StaffActions uid={s.uid} name={s.name} currentStatus={s.status} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden sm:block glass-card rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/40">
                 <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Name</th>
                 <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Phone</th>
-                <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 hidden sm:table-cell">Status</th>
+                <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Status</th>
                 <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 hidden md:table-cell">Leads Assigned</th>
                 <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 hidden lg:table-cell">Joined</th>
                 <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Actions</th>
@@ -69,7 +99,7 @@ export default async function AdminStaffPage() {
                     </div>
                   </td>
                   <td className="px-5 py-3.5 text-gray-600">{s.phone}</td>
-                  <td className="px-5 py-3.5 hidden sm:table-cell">
+                  <td className="px-5 py-3.5">
                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                       s.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
                     }`}>{s.status}</span>
@@ -88,11 +118,7 @@ export default async function AdminStaffPage() {
                 </tr>
               ))}
               {staff.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center text-gray-400 text-sm">
-                    No staff members yet. Add one above.
-                  </td>
-                </tr>
+                <tr><td colSpan={6} className="px-5 py-12 text-center text-gray-400 text-sm">No staff members yet. Add one above.</td></tr>
               )}
             </tbody>
           </table>

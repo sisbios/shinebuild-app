@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@shinebuild/ui';
+import { LogoutButton } from '@/components/shared/LogoutButton';
 
 const NAV = [
   {
@@ -80,7 +81,10 @@ export function AdminNav({ role }: Props) {
           </div>
           <span className="text-sm font-bold text-gray-900">Shine Build Hub</span>
         </div>
-        <span className="ml-auto text-xs font-medium text-gray-400 capitalize bg-red-50 px-2 py-1 rounded-lg">{role}</span>
+        <div className="ml-auto flex items-center gap-2">
+          <span className="text-xs font-medium text-gray-400 capitalize bg-red-50 px-2 py-1 rounded-lg">{role}</span>
+          <LogoutButton />
+        </div>
       </header>
 
       {/* ─── Mobile bottom nav — 4 round icons ──────────── */}

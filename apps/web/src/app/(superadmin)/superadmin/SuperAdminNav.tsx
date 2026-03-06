@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { LogoutButton } from '@/components/shared/LogoutButton';
 
 function cn(...classes: (string | false | undefined)[]) {
   return classes.filter(Boolean).join(' ');
@@ -106,7 +107,10 @@ export function SuperAdminNav() {
           </div>
           <span className="text-sm font-bold text-gray-900">Super Admin</span>
         </div>
-        <span className="text-xs text-gray-400 bg-red-50 px-2 py-1 rounded-lg font-medium">superadmin</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-400 bg-red-50 px-2 py-1 rounded-lg font-medium">superadmin</span>
+          <LogoutButton />
+        </div>
       </header>
 
       {/* Mobile bottom nav */}
