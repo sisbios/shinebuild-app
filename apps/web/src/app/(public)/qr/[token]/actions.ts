@@ -19,17 +19,7 @@ export async function validateQrToken(rawToken: string): Promise<ValidationResul
     const db = getAdminDb();
     const tokenHash = sha256Hex(rawToken);
 
-    // Firestore transaction for atomic single-use enforcement
-    const result = await db.runTransaction(async (tx) => {
-      const snap = await tx.get(
-        db.collection(COLLECTIONS.QR_TOKENS).where('tokenHash', '==', tokenHash).limit(1) as any
-      );
-
-      // Transaction on queries not supported directly — use collection group query outside
-      return { found: !snap.empty };
-    });
-
-    // Query outside transaction, then update atomically
+    // 1. Find the token document by hash
     const snap = await db
       .collection(COLLECTIONS.QR_TOKENS)
       .where('tokenHash', '==', tokenHash)
@@ -41,18 +31,19 @@ export async function validateQrToken(rawToken: string): Promise<ValidationResul
     const doc = snap.docs[0]!;
     const data = doc.data();
 
-    if (data['usedAt'] !== null) return { error: 'used' };
+    // Pre-checks (fast path before transaction)
+    if (data['usedAt'] != null) return { error: 'used' };
     if ((data['expiresAt'] as Timestamp).toDate() < new Date()) return { error: 'expired' };
 
-    // Atomic consume
+    // 2. Atomically consume — tx.get(DocumentReference) IS supported
     await db.runTransaction(async (tx) => {
       const freshSnap = await tx.get(doc.ref);
       const fresh = freshSnap.data()!;
-      if (fresh['usedAt'] !== null) throw new Error('already-used');
+      if (fresh['usedAt'] != null) throw new Error('already-used');
       tx.update(doc.ref, { usedAt: FieldValue.serverTimestamp() });
     });
 
-    // Audit
+    // 3. Audit
     await db.collection(COLLECTIONS.AUDITS).add({
       actorUid: data['agentId'],
       role: 'agent',
