@@ -14,9 +14,14 @@ export default async function AgentDashboardPage() {
   let qualifiedLeads = 0;
   let ledgerBalance = 0;
 
+  // Fetch name separately — isolate from other queries that may require indexes
   try {
-    const [userSnap, leadsSnap, qualifiedSnap, ledgerSnap] = await Promise.all([
-      db.collection(COLLECTIONS.USERS).doc(session!.uid).get(),
+    const userSnap = await db.collection(COLLECTIONS.USERS).doc(session!.uid).get();
+    agentName = userSnap.data()?.['name'] ?? '';
+  } catch { /* no user doc yet */ }
+
+  try {
+    const [leadsSnap, qualifiedSnap, ledgerSnap] = await Promise.all([
       db.collectionGroup(COLLECTIONS.AGENT_VIEW).where('agentId', '==', session!.uid).get(),
       db.collectionGroup(COLLECTIONS.AGENT_VIEW)
         .where('agentId', '==', session!.uid)
@@ -25,13 +30,10 @@ export default async function AgentDashboardPage() {
       db.collection(COLLECTIONS.INCENTIVE_LEDGER).doc(session!.uid).get(),
     ]);
 
-    agentName = userSnap.data()?.['name'] ?? '';
     totalLeads = leadsSnap.size;
     qualifiedLeads = qualifiedSnap.size;
     if (ledgerSnap.exists) ledgerBalance = ledgerSnap.data()!['balance'] ?? 0;
-  } catch {
-    // No data yet
-  }
+  } catch { /* no data yet */ }
 
   const firstName = agentName.split(' ')[0] || 'Agent';
 

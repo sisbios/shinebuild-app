@@ -153,22 +153,27 @@ export default async function SuperAdminDashboardPage() {
 
             {/* Bars */}
             {chartData.map(({ day, count }, i) => {
-              const barH = count === 0 ? 2 : Math.max(4, Math.round((count / maxCount) * (SVG_H - 4)));
+              const barH = count === 0 ? 2 : Math.max(8, Math.round((count / maxCount) * (SVG_H - 12)));
               const x = i * (BAR_W + GAP);
               const y = SVG_H - barH;
               const isToday = day === today;
+              const labelY = y - 3;
               return (
                 <g key={day}>
                   <rect
                     x={x} y={y} width={BAR_W} height={barH} rx={1.5}
                     fill={isToday ? 'url(#todayGrad)' : count === 0 ? '#f3f4f6' : 'url(#barGrad)'}
                   />
-                  {/* Count label on top of bar if has data */}
+                  {/* Count label on top of bar */}
                   {count > 0 && (
-                    <text x={x + BAR_W / 2} y={y - 2} textAnchor="middle"
-                      fontSize="6" fill={isToday ? '#bf0000' : '#6b7280'} fontWeight="600">
-                      {count}
-                    </text>
+                    <>
+                      <rect x={x - 1} y={labelY - 7} width={BAR_W + 2} height={8} rx={2}
+                        fill={isToday ? '#bf0000' : '#6b7280'} opacity="0.9" />
+                      <text x={x + BAR_W / 2} y={labelY} textAnchor="middle"
+                        fontSize="5.5" fill="#ffffff" fontWeight="700">
+                        {count}
+                      </text>
+                    </>
                   )}
                 </g>
               );
