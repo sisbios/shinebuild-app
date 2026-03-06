@@ -1,4 +1,4 @@
-import { getAdminDb, getAdminStorage } from '@/lib/firebase-server';
+import { getAdminDb } from '@/lib/firebase-server';
 import { COLLECTIONS } from '@shinebuild/firebase';
 import { LeadStatusBadge } from '@/components/leads/LeadStatusBadge';
 import { notFound } from 'next/navigation';
@@ -23,24 +23,10 @@ export default async function AdminLeadDetailPage({ params }: Props) {
   const d = snap.data()!;
   const photos = (d['photos'] as string[]) ?? [];
 
-  // Generate signed URLs for photos (2-hour expiry)
-  let photoUrls: string[] = [];
-  if (photos.length > 0) {
-    try {
-      const bucket = getAdminStorage().bucket(
-        process.env.FIREBASE_STORAGE_BUCKET || process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-      );
-      photoUrls = await Promise.all(
-        photos.map(async (path) => {
-          const [url] = await bucket.file(path).getSignedUrl({
-            action: 'read',
-            expires: Date.now() + 2 * 60 * 60 * 1000,
-          });
-          return url;
-        })
-      );
-    } catch { /* photos unavailable */ }
-  }
+  // Use server-side photo proxy to avoid signed URL permission issues
+  const photoUrls = photos.map(
+    (path) => `/api/photo?path=${encodeURIComponent(path)}`
+  );
 
   const lead = {
     id: leadId,

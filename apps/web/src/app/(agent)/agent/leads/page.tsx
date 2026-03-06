@@ -14,29 +14,31 @@ export default async function AgentLeadsPage() {
   let leads: Array<{ id: string; referenceId: string; maskedName: string; maskedPhone: string; status: LeadStatus; city: string; incentiveAmount: number; createdAt: Date }> = [];
 
   try {
-    // Agent reads only their masked agentView subcollection docs
+    // Query without orderBy to avoid composite index requirement while indexes build.
+    // Sort in memory instead.
     const snap = await db
       .collectionGroup(COLLECTIONS.AGENT_VIEW)
       .where('agentId', '==', session!.uid)
-      .orderBy('createdAt', 'desc')
-      .limit(50)
+      .limit(100)
       .get();
 
-    leads = snap.docs.map((doc) => {
-      const d = doc.data();
-      return {
-        id: doc.ref.parent.parent!.id,
-        referenceId: d['referenceId'],
-        maskedName: d['maskedName'],
-        maskedPhone: d['maskedPhone'],
-        status: d['status'] as LeadStatus,
-        city: d['city'],
-        incentiveAmount: d['incentiveAmount'] ?? 0,
-        createdAt: d['createdAt']?.toDate() ?? new Date(),
-      };
-    });
-  } catch {
-    // No leads yet
+    leads = snap.docs
+      .map((doc) => {
+        const d = doc.data();
+        return {
+          id: doc.ref.parent.parent!.id,
+          referenceId: d['referenceId'] ?? doc.ref.parent.parent!.id.slice(-6).toUpperCase(),
+          maskedName: d['maskedName'] ?? '***',
+          maskedPhone: d['maskedPhone'] ?? '***',
+          status: (d['status'] as LeadStatus) ?? 'new',
+          city: d['city'] ?? '',
+          incentiveAmount: d['incentiveAmount'] ?? 0,
+          createdAt: d['createdAt']?.toDate() ?? new Date(),
+        };
+      })
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  } catch (e) {
+    console.error('AgentLeadsPage query error:', e);
   }
 
   return (
