@@ -9,9 +9,9 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          DEFAULT: '#f97316', // orange-500
-          dark: '#ea580c',    // orange-600
-          light: '#fed7aa',   // orange-200
+          DEFAULT: '#bf0000',
+          dark: '#d10000',
+          light: '#fecaca',   // red-200
         },
       },
       fontFamily: {

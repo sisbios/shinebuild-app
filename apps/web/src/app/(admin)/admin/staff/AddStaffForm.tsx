@@ -51,7 +51,7 @@ export function AddStaffForm() {
                   name="name"
                   required
                   placeholder="e.g. Rahul Sharma"
-                  className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white/70 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white/70 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-600"
                 />
               </div>
               <div>
@@ -60,7 +60,7 @@ export function AddStaffForm() {
                   name="phone"
                   required
                   placeholder="+919876543210"
-                  className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white/70 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white/70 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-600"
                 />
                 <p className="text-xs text-gray-400 mt-1">Include country code, e.g. +91</p>
               </div>

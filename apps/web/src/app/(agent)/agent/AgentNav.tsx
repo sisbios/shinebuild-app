@@ -78,7 +78,7 @@ export function AgentNav() {
                 <span className={cn(
                   'flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg transition-all',
                   active
-                    ? 'brand-gradient text-white shadow-orange-200'
+                    ? 'brand-gradient text-white shadow-red-200'
                     : 'brand-gradient text-white'
                 )}>
                   {item.icon(active)}
@@ -94,12 +94,12 @@ export function AgentNav() {
               href={item.href}
               className={cn(
                 'flex flex-1 flex-col items-center gap-0.5 py-1 text-xs font-medium transition-colors rounded-xl mx-0.5',
-                active ? 'text-orange-500' : 'text-gray-400 hover:text-gray-600'
+                active ? 'text-red-700' : 'text-gray-400 hover:text-gray-600'
               )}
             >
               <span className={cn(
                 'flex h-8 w-8 items-center justify-center rounded-xl transition-all',
-                active && 'bg-orange-50'
+                active && 'bg-red-50'
               )}>
                 {item.icon(active)}
               </span>

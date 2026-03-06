@@ -53,11 +53,11 @@ export function AdminNav({ role }: Props) {
             return (
               <Link key={item.href} href={item.href} className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
-                active ? 'bg-orange-500/10 text-orange-600' : 'text-gray-600 hover:bg-white/60 hover:text-gray-900'
+                active ? 'bg-red-700/10 text-red-800' : 'text-gray-600 hover:bg-white/60 hover:text-gray-900'
               )}>
-                <span className={cn('flex-shrink-0', active ? 'text-orange-500' : 'text-gray-400')}>{item.icon}</span>
+                <span className={cn('flex-shrink-0', active ? 'text-red-700' : 'text-gray-400')}>{item.icon}</span>
                 {item.label}
-                {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-orange-500" />}
+                {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-red-700" />}
               </Link>
             );
           })}
@@ -80,7 +80,7 @@ export function AdminNav({ role }: Props) {
           </div>
           <span className="text-sm font-bold text-gray-900">Shine Build Hub</span>
         </div>
-        <span className="ml-auto text-xs font-medium text-gray-400 capitalize bg-orange-50 px-2 py-1 rounded-lg">{role}</span>
+        <span className="ml-auto text-xs font-medium text-gray-400 capitalize bg-red-50 px-2 py-1 rounded-lg">{role}</span>
       </header>
 
       {/* ─── Mobile bottom nav — 4 round icons ──────────── */}
@@ -95,12 +95,12 @@ export function AdminNav({ role }: Props) {
                 <span className={cn(
                   'flex h-12 w-12 items-center justify-center rounded-2xl transition-all',
                   active
-                    ? 'brand-gradient text-white shadow-lg shadow-orange-200/60'
-                    : 'bg-white/60 text-gray-500 hover:bg-orange-50 hover:text-orange-500'
+                    ? 'brand-gradient text-white shadow-lg shadow-red-200/60'
+                    : 'bg-white/60 text-gray-500 hover:bg-red-50 hover:text-red-700'
                 )}>
                   {item.icon}
                 </span>
-                <span className={cn('text-[10px] font-semibold', active ? 'text-orange-600' : 'text-gray-400')}>
+                <span className={cn('text-[10px] font-semibold', active ? 'text-red-800' : 'text-gray-400')}>
                   {item.label}
                 </span>
               </Link>

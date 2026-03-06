@@ -20,7 +20,7 @@ export function ConsentCheckbox({
           type="checkbox"
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
-          className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+          className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-red-700 focus:ring-red-700"
         />
         <span className="text-sm text-gray-700">{label}</span>
       </label>

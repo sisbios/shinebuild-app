@@ -10,8 +10,8 @@ export default async function StaffLayout({ children }: { children: React.ReactN
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <h1 className="text-base font-bold text-gray-900">Shine Build Hub — Staff</h1>
           <nav className="flex gap-4 text-sm text-gray-600">
-            <Link href="/staff/dashboard" className="hover:text-orange-600">Dashboard</Link>
-            <Link href="/staff/leads" className="hover:text-orange-600">My Leads</Link>
+            <Link href="/staff/dashboard" className="hover:text-red-800">Dashboard</Link>
+            <Link href="/staff/leads" className="hover:text-red-800">My Leads</Link>
           </nav>
         </div>
       </header>

@@ -155,7 +155,7 @@ export function QrLeadFlow({ tokenId }: Props) {
           Requirement <span className="text-red-500">*</span>
         </label>
         <textarea
-          className="flex min-h-[80px] w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
+          className="flex min-h-[80px] w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-red-700 focus:outline-none focus:ring-1 focus:ring-red-700"
           placeholder="Describe what you're looking for..."
           value={requirementNotes}
           onChange={(e) => setRequirementNotes(e.target.value)}

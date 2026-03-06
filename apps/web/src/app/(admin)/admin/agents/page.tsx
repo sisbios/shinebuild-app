@@ -134,7 +134,7 @@ export default async function AdminAgentsPage({ searchParams }: Props) {
                   <td className="px-5 py-3.5 text-right">
                     <Link
                       href={`/admin/agents/${agent.uid}`}
-                      className="inline-flex items-center gap-1 rounded-lg bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-600 hover:bg-orange-100 transition-colors"
+                      className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-800 hover:bg-red-100 transition-colors"
                     >
                       Manage
                       <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">

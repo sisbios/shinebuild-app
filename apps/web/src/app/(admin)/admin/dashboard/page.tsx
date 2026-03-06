@@ -64,7 +64,7 @@ function StatCard({ label, value, href, color, highlight, warning }: {
 }) {
   const colors: Record<string, string> = {
     blue: 'from-blue-500 to-blue-600',
-    orange: 'from-orange-500 to-orange-600',
+    orange: 'from-red-700 to-red-800',
     green: 'from-green-500 to-green-600',
     amber: 'from-amber-500 to-amber-600',
     purple: 'from-purple-500 to-purple-600',
@@ -88,14 +88,14 @@ function QuickLink({ href, title, desc, icon, badge }: {
       <span className="text-2xl flex-shrink-0">{icon}</span>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <p className="font-semibold text-gray-900 text-sm group-hover:text-orange-600 transition-colors truncate">{title}</p>
+          <p className="font-semibold text-gray-900 text-sm group-hover:text-red-800 transition-colors truncate">{title}</p>
           {badge !== undefined && (
-            <span className="flex-shrink-0 h-5 w-5 rounded-full bg-orange-500 text-white text-xs flex items-center justify-center font-bold">{badge}</span>
+            <span className="flex-shrink-0 h-5 w-5 rounded-full bg-red-700 text-white text-xs flex items-center justify-center font-bold">{badge}</span>
           )}
         </div>
         <p className="text-xs text-gray-500 mt-0.5 truncate">{desc}</p>
       </div>
-      <svg className="h-4 w-4 text-gray-300 group-hover:text-orange-400 transition-colors flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="h-4 w-4 text-gray-300 group-hover:text-red-600 transition-colors flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
       </svg>
     </Link>

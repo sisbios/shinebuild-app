@@ -45,7 +45,7 @@ export default async function AgentLeadsPage() {
         <h1 className="text-xl font-bold text-gray-900">My Leads</h1>
         <Link
           href="/agent/leads/new"
-          className="rounded-lg bg-orange-500 px-3 py-1.5 text-sm font-semibold text-white"
+          className="rounded-lg bg-red-700 px-3 py-1.5 text-sm font-semibold text-white"
         >
           + New
         </Link>
@@ -54,7 +54,7 @@ export default async function AgentLeadsPage() {
       {leads.length === 0 ? (
         <div className="py-16 text-center text-gray-400">
           <p className="text-sm">No leads yet.</p>
-          <Link href="/agent/leads/new" className="mt-2 block text-sm text-orange-500 underline">
+          <Link href="/agent/leads/new" className="mt-2 block text-sm text-red-700 underline">
             Add your first lead
           </Link>
         </div>

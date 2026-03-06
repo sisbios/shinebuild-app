@@ -56,14 +56,14 @@ export default async function AgentDashboardPage() {
         <h2 className="text-sm font-semibold text-gray-700">Quick Actions</h2>
         <Link
           href="/agent/leads/new"
-          className="flex items-center gap-3 rounded-xl bg-orange-500 px-4 py-3 text-white shadow-sm"
+          className="flex items-center gap-3 rounded-xl bg-red-700 px-4 py-3 text-white shadow-sm"
         >
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
           <div>
             <p className="font-semibold">Add New Lead</p>
-            <p className="text-xs text-orange-100">Direct entry with geo + photo</p>
+            <p className="text-xs text-red-100">Direct entry with geo + photo</p>
           </div>
         </Link>
         <Link
@@ -86,8 +86,8 @@ export default async function AgentDashboardPage() {
 
 function StatCard({ label, value, highlight = false }: { label: string; value: string | number; highlight?: boolean }) {
   return (
-    <div className={`rounded-xl border p-3 text-center ${highlight ? 'border-orange-200 bg-orange-50' : 'border-gray-200 bg-white'}`}>
-      <p className={`text-xl font-bold ${highlight ? 'text-orange-600' : 'text-gray-900'}`}>{value}</p>
+    <div className={`rounded-xl border p-3 text-center ${highlight ? 'border-red-200 bg-red-50' : 'border-gray-200 bg-white'}`}>
+      <p className={`text-xl font-bold ${highlight ? 'text-red-800' : 'text-gray-900'}`}>{value}</p>
       <p className="text-xs text-gray-500">{label}</p>
     </div>
   );

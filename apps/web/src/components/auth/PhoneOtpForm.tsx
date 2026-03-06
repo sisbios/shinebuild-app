@@ -122,7 +122,7 @@ export function PhoneOtpForm({ onSuccess, submitLabel = 'Verify & Continue' }: P
           <button
             type="button"
             onClick={() => { setStep('phone'); setOtp(''); setError(''); }}
-            className="w-full text-center text-sm text-orange-600 hover:underline"
+            className="w-full text-center text-sm text-red-800 hover:underline"
           >
             Change number
           </button>

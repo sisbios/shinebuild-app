@@ -1,6 +1,6 @@
 export default function AgentPendingPage() {
   return (
-    <main className="flex min-h-svh flex-col items-center justify-center bg-gradient-to-br from-orange-50 to-white px-4">
+    <main className="flex min-h-svh flex-col items-center justify-center bg-gradient-to-br from-red-50 to-white px-4">
       <div className="w-full max-w-sm text-center space-y-6">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
           <svg className="h-8 w-8 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">

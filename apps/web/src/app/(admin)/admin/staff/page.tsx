@@ -75,7 +75,7 @@ export default async function AdminStaffPage() {
                     }`}>{s.status}</span>
                   </td>
                   <td className="px-5 py-3.5 hidden md:table-cell">
-                    <Link href={`/admin/leads?assignedStaff=${s.uid}`} className="text-orange-600 hover:underline font-medium">
+                    <Link href={`/admin/leads?assignedStaff=${s.uid}`} className="text-red-800 hover:underline font-medium">
                       {s.leadCount} leads
                     </Link>
                   </td>

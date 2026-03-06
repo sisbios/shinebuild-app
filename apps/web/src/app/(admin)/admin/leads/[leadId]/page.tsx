@@ -45,8 +45,8 @@ export default async function AdminLeadDetailPage({ params }: Props) {
       </div>
 
       {lead.duplicateOfLeadId && (
-        <div className="rounded-xl bg-orange-50 border border-orange-200 px-4 py-3">
-          <p className="text-sm text-orange-800">
+        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3">
+          <p className="text-sm text-red-900">
             Duplicate of lead{' '}
             <Link href={`/admin/leads/${lead.duplicateOfLeadId}`} className="underline font-medium">
               {lead.duplicateOfLeadId.slice(-6).toUpperCase()}

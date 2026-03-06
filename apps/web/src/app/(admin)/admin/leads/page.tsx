@@ -58,15 +58,15 @@ export default async function AdminLeadsPage({ searchParams }: Props) {
 
       {/* Filters */}
       <form className="flex gap-2 flex-wrap">
-        <select name="status" defaultValue={sp.status ?? ''} className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500">
+        <select name="status" defaultValue={sp.status ?? ''} className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-red-700">
           <option value="">All Status</option>
           {['new','contacted','qualified','rejected','duplicate','converted'].map((s) => (
             <option key={s} value={s}>{s}</option>
           ))}
         </select>
         <input name="city" defaultValue={sp.city ?? ''} placeholder="Filter by city"
-          className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
-        <button type="submit" className="rounded-lg bg-orange-500 px-3 py-1.5 text-sm font-medium text-white">
+          className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-red-700" />
+        <button type="submit" className="rounded-lg bg-red-700 px-3 py-1.5 text-sm font-medium text-white">
           Filter
         </button>
       </form>
@@ -100,7 +100,7 @@ export default async function AdminLeadsPage({ searchParams }: Props) {
                   {lead.createdAt.toLocaleDateString('en-IN')}
                 </td>
                 <td className="px-4 py-3">
-                  <Link href={`/admin/leads/${lead.id}`} className="text-xs text-orange-600 hover:underline">
+                  <Link href={`/admin/leads/${lead.id}`} className="text-xs text-red-800 hover:underline">
                     View
                   </Link>
                 </td>

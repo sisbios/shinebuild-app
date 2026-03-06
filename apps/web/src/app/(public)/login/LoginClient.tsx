@@ -25,7 +25,7 @@ function getRoleRedirect(role: string): string {
   switch (role) {
     case 'agent': return '/agent/dashboard';
     case 'admin': return '/admin/dashboard';
-    case 'superadmin': return '/superadmin/reports';
+    case 'superadmin': return '/superadmin/dashboard';
     case 'staff': return '/staff/dashboard';
     default: return '/agent/register';
   }

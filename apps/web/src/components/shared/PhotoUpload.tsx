@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { getClientStorage } from '@/lib/firebase-client';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytesResumable } from 'firebase/storage';
 
 interface Props {
   agentId: string;
@@ -36,42 +36,62 @@ async function resizeImage(file: File, maxWidth = 1280): Promise<Blob> {
   });
 }
 
+interface UploadItem {
+  name: string;
+  progress: number;
+  done: boolean;
+  error: boolean;
+}
+
 export function PhotoUpload({ agentId, leadDraftId, onUpload, value, error }: Props) {
-  const [uploading, setUploading] = useState(false);
+  const [uploads, setUploads] = useState<UploadItem[]>([]);
   const [uploadError, setUploadError] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const uploading = uploads.some((u) => !u.done && !u.error);
+
+  const updateItem = (index: number, patch: Partial<UploadItem>) =>
+    setUploads((prev) => prev.map((u, i) => (i === index ? { ...u, ...patch } : u)));
+
   const handleFiles = async (files: FileList) => {
     const remaining = MAX_PHOTOS - value.length;
-    if (remaining <= 0) {
-      setUploadError(`Maximum ${MAX_PHOTOS} photos allowed`);
-      return;
-    }
+    if (remaining <= 0) { setUploadError(`Maximum ${MAX_PHOTOS} photos allowed`); return; }
     setUploadError('');
-    setUploading(true);
 
     const toUpload = Array.from(files).slice(0, remaining);
-    const paths: string[] = [];
+    setUploads(toUpload.map((f) => ({ name: f.name, progress: 0, done: false, error: false })));
 
-    try {
-      const storage = getClientStorage();
-      for (const file of toUpload) {
-        if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-          setUploadError(`Each photo must be under ${MAX_SIZE_MB}MB`);
-          continue;
-        }
+    const paths: string[] = [];
+    const storage = getClientStorage();
+
+    for (let i = 0; i < toUpload.length; i++) {
+      const file = toUpload[i]!;
+      if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+        setUploadError(`Each photo must be under ${MAX_SIZE_MB}MB`);
+        updateItem(i, { error: true, done: true });
+        continue;
+      }
+      try {
         const resized = await resizeImage(file);
         const storagePath = `leads/${leadDraftId}/photos/${Date.now()}_${file.name}`;
-        const storageRef = ref(storage, storagePath);
-        await uploadBytes(storageRef, resized, { contentType: 'image/jpeg' });
-        paths.push(storagePath);
+        const task = uploadBytesResumable(ref(storage, storagePath), resized, { contentType: 'image/jpeg' });
+
+        await new Promise<void>((resolve, reject) => {
+          task.on(
+            'state_changed',
+            (snap) => updateItem(i, { progress: Math.round((snap.bytesTransferred / snap.totalBytes) * 100) }),
+            (err) => { updateItem(i, { error: true, done: true }); reject(err); },
+            () => { updateItem(i, { progress: 100, done: true }); paths.push(storagePath); resolve(); }
+          );
+        });
+      } catch {
+        updateItem(i, { error: true, done: true });
+        setUploadError('Upload failed. Please try again.');
       }
-      onUpload([...value, ...paths]);
-    } catch {
-      setUploadError('Upload failed. Please try again.');
-    } finally {
-      setUploading(false);
     }
+
+    if (paths.length > 0) onUpload([...value, ...paths]);
+    setTimeout(() => setUploads([]), 1200);
   };
 
   const displayError = error ?? uploadError;
@@ -84,7 +104,7 @@ export function PhotoUpload({ agentId, leadDraftId, onUpload, value, error }: Pr
       </label>
 
       {value.length > 0 && (
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {value.map((path, i) => (
             <div key={i} className="relative h-16 w-16 rounded-lg bg-gray-100 overflow-hidden border border-gray-200">
               <div className="flex h-full items-center justify-center">
@@ -107,16 +127,46 @@ export function PhotoUpload({ agentId, leadDraftId, onUpload, value, error }: Pr
         </div>
       )}
 
+      {/* Per-image progress bars */}
+      {uploads.length > 0 && (
+        <div className="space-y-2">
+          {uploads.map((u, i) => (
+            <div key={i} className="rounded-lg border border-gray-200 bg-white/70 px-3 py-2">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-gray-600 truncate max-w-[70%]">{u.name}</span>
+                <span className={`text-xs font-semibold ${u.error ? 'text-red-500' : u.done ? 'text-green-600' : 'text-gray-500'}`}>
+                  {u.error ? 'Failed' : u.done ? 'Done ✓' : `${u.progress}%`}
+                </span>
+              </div>
+              <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-200 ${
+                    u.error ? 'bg-red-400' : u.done ? 'bg-green-500' : 'brand-gradient'
+                  }`}
+                  style={{ width: `${u.progress}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {value.length < MAX_PHOTOS && (
         <>
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={uploading}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 py-4 text-sm text-gray-500 hover:border-orange-400 hover:text-orange-600 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 py-4 text-sm text-gray-500 hover:border-red-600 hover:text-red-700 disabled:opacity-50 transition-colors"
           >
             {uploading ? (
-              <span>Uploading...</span>
+              <span className="flex items-center gap-2">
+                <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Uploading...
+              </span>
             ) : (
               <>
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

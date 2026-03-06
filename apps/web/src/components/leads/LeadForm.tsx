@@ -74,7 +74,7 @@ export function LeadForm({ agentId }: Props) {
           Requirement Details <span className="text-red-500">*</span>
         </label>
         <textarea
-          className="flex min-h-[100px] w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
+          className="flex min-h-[100px] w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-red-700 focus:outline-none focus:ring-1 focus:ring-red-700"
           placeholder="Describe the customer's requirement, property type, budget, etc."
           value={requirementNotes}
           onChange={(e) => setRequirementNotes(e.target.value)}

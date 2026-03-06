@@ -3,8 +3,8 @@
 
 @layer base {
   :root {
-    --color-brand: #f97316;
-    --color-brand-dark: #ea580c;
+    --color-brand: #bf0000;
+    --color-brand-dark: #d10000;
 
     /* Glass tokens */
     --glass-bg: rgba(255, 255, 255, 0.72);
@@ -74,15 +74,15 @@
   /* ── Mesh backgrounds ───────────────────────────── */
   .bg-mesh {
     background:
-      radial-gradient(ellipse 80% 60% at 20% 0%, rgba(251,146,60,0.13) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 50% at 80% 100%, rgba(249,115,22,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 80% 60% at 20% 0%, rgba(191,0,0,0.10) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 80% 100%, rgba(209,0,0,0.06) 0%, transparent 60%),
       radial-gradient(ellipse 100% 100% at 50% 50%, #f8fafc 0%, #f1f5f9 100%);
   }
   .bg-mesh-orange {
     background:
-      radial-gradient(ellipse 90% 70% at 10% 10%, rgba(251,146,60,0.18) 0%, transparent 55%),
-      radial-gradient(ellipse 70% 60% at 90% 80%, rgba(234,88,12,0.10) 0%, transparent 55%),
-      linear-gradient(135deg, #fff7ed 0%, #fef3e2 50%, #fff8f0 100%);
+      radial-gradient(ellipse 90% 70% at 10% 10%, rgba(191,0,0,0.12) 0%, transparent 55%),
+      radial-gradient(ellipse 70% 60% at 90% 80%, rgba(209,0,0,0.07) 0%, transparent 55%),
+      linear-gradient(135deg, #fff5f5 0%, #ffe8e8 50%, #fff5f5 100%);
   }
 
   /* ── Hover lift ─────────────────────────────────── */
@@ -95,11 +95,11 @@
   }
 
   /* ── Brand gradient ─────────────────────────────── */
-  .brand-gradient { background: linear-gradient(135deg,#f97316 0%,#ea580c 100%); }
+  .brand-gradient { background: linear-gradient(to right, #bf0000, #d10000, #bf0000); }
 
   /* ── Text gradient ──────────────────────────────── */
   .text-gradient-brand {
-    background: linear-gradient(135deg,#f97316,#dc2626);
+    background: linear-gradient(135deg,#bf0000,#d10000);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -115,7 +115,7 @@
     inset: -1px;
     border-radius: inherit;
     padding: 1px;
-    background: linear-gradient(135deg,rgba(249,115,22,0.6),rgba(234,88,12,0.3),rgba(249,115,22,0.6));
+    background: linear-gradient(135deg,rgba(191,0,0,0.6),rgba(209,0,0,0.3),rgba(191,0,0,0.6));
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
