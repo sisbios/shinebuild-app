@@ -41,11 +41,14 @@ export default async function SuperAdminReportsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Platform statistics &amp; export</p>
+        </div>
         <ExportButton />
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <Stat label="Total Leads" value={stats.totalLeads} />
         <Stat label="Qualified" value={stats.qualifiedLeads} />
         <Stat label="Converted" value={stats.convertedLeads} />
@@ -54,9 +57,9 @@ export default async function SuperAdminReportsPage() {
         <Stat label="Incentives Paid" value={`₹${stats.totalIncentivesPaid}`} />
       </div>
 
-      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-        <p className="text-sm text-amber-800">
-          <strong>Export:</strong> Click "Export CSV" to download a full report. All exports are logged in the audit trail.
+      <div className="glass-card rounded-2xl px-4 py-3">
+        <p className="text-sm text-gray-600">
+          <strong>Export:</strong> Click &quot;Export CSV&quot; to download a full report. All exports are logged in the audit trail.
         </p>
       </div>
     </div>
@@ -65,7 +68,7 @@ export default async function SuperAdminReportsPage() {
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4">
+    <div className="glass-card rounded-2xl p-4">
       <p className="text-2xl font-bold text-gray-900">{value}</p>
       <p className="text-xs text-gray-500 mt-1">{label}</p>
     </div>
