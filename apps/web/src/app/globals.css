@@ -85,6 +85,13 @@
       linear-gradient(135deg, #fff5f5 0%, #ffe8e8 50%, #fff5f5 100%);
   }
 
+  /* ── Shimmer animation for indeterminate progress ── */
+  @keyframes shimmer {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(200%); }
+  }
+  .animate-shimmer { animation: shimmer 1.2s ease-in-out infinite; }
+
   /* ── Hover lift ─────────────────────────────────── */
   .hover-lift {
     transition: transform 0.18s ease, box-shadow 0.18s ease;
