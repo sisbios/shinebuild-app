@@ -3,7 +3,7 @@
 import { requireRole } from '@/lib/session';
 import { getAdminDb } from '@/lib/firebase-server';
 import { COLLECTIONS } from '@shinebuild/firebase';
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import type { LeadStatus } from '@shinebuild/shared';
 
 const VALID_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
@@ -36,7 +36,7 @@ export async function updateLeadStatus(
 
     const historyEntry = {
       status: newStatus,
-      at: FieldValue.serverTimestamp(),
+      at: Timestamp.now(), // serverTimestamp() not allowed inside arrayUnion
       by: session.uid,
       ...(note ? { note } : {}),
     };

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   RecaptchaVerifier,
   signInWithPhoneNumber,
@@ -26,6 +26,19 @@ export function PhoneOtpForm({ onSuccess, submitLabel = 'Verify & Continue' }: P
   const confirmationRef = useRef<ConfirmationResult | null>(null);
   const recaptchaRef = useRef<RecaptchaVerifier | null>(null);
   const recaptchaContainerRef = useRef<HTMLDivElement>(null);
+
+  // Pre-warm reCAPTCHA on mount so it's ready when user taps Send OTP
+  useEffect(() => {
+    try {
+      const auth = getClientAuth();
+      const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible',
+        callback: () => {},
+      });
+      recaptchaRef.current = verifier;
+      verifier.render().catch(() => {}); // pre-render silently
+    } catch { /* ignore — will retry on sendOtp */ }
+  }, []);
 
   const getRecaptchaVerifier = (): RecaptchaVerifier => {
     if (recaptchaRef.current) return recaptchaRef.current;
