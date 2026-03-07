@@ -1,21 +1,33 @@
-import { requireRole } from '@/lib/session';
-import Link from 'next/link';
+import { requireRole, getServerSession } from '@/lib/session';
+import { getAdminDb } from '@/lib/firebase-server';
+import { COLLECTIONS } from '@shinebuild/firebase';
+import { StaffNav } from './StaffNav';
 
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
   await requireRole('staff');
+  const session = await getServerSession();
+  const db = getAdminDb();
+
+  // Fetch pending lead count for the badge on nav
+  let pendingCount = 0;
+  try {
+    const snap = await db
+      .collection(COLLECTIONS.LEADS)
+      .where('assignedStaffIds', 'array-contains', session!.uid)
+      .where('status.current', 'in', ['new', 'contacted'])
+      .get();
+    pendingCount = snap.size;
+  } catch { /* non-critical */ }
 
   return (
-    <div className="min-h-svh bg-gray-50">
-      <header className="border-b border-gray-200 bg-white px-4 py-3">
-        <div className="max-w-3xl mx-auto flex items-center justify-between">
-          <h1 className="text-base font-bold text-gray-900">Shine Build Hub — Staff</h1>
-          <nav className="flex gap-4 text-sm text-gray-600">
-            <Link href="/staff/dashboard" className="hover:text-red-800">Dashboard</Link>
-            <Link href="/staff/leads" className="hover:text-red-800">My Leads</Link>
-          </nav>
+    <div className="min-h-svh bg-mesh">
+      <StaffNav pendingCount={pendingCount} />
+      {/* pt-14: offset fixed top header; pb-20: offset mobile bottom nav */}
+      <main className="pt-14 pb-20 sm:pb-6">
+        <div className="max-w-5xl mx-auto px-4 py-5 lg:px-8">
+          {children}
         </div>
-      </header>
-      <main className="max-w-3xl mx-auto px-4 py-6">{children}</main>
+      </main>
     </div>
   );
 }
