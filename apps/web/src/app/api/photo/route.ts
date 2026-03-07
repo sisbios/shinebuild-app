@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
 
     const [buffer] = await file.download();
 
-    return new NextResponse(buffer, {
+    return new NextResponse(buffer as unknown as BodyInit, {
       status: 200,
       headers: {
         'Content-Type': contentType,

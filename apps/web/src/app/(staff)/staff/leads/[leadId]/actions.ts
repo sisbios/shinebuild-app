@@ -5,6 +5,7 @@ import { getAdminDb } from '@/lib/firebase-server';
 import { COLLECTIONS } from '@shinebuild/firebase';
 import { FieldValue } from 'firebase-admin/firestore';
 import { updateLeadStatus } from '@/app/(admin)/admin/leads/[leadId]/actions';
+import { revalidatePath } from 'next/cache';
 import type { LeadStatus } from '@shinebuild/shared';
 
 export async function submitQcUpdate(leadId: string, notes: string): Promise<void> {
@@ -21,5 +22,10 @@ export async function updateLeadStatusStaff(
   status: LeadStatus,
   note?: string
 ): Promise<{ error?: string }> {
-  return updateLeadStatus(leadId, status, note);
+  const result = await updateLeadStatus(leadId, status, note);
+  if (!result.error) {
+    revalidatePath('/staff/leads');
+    revalidatePath('/staff/dashboard');
+  }
+  return result;
 }

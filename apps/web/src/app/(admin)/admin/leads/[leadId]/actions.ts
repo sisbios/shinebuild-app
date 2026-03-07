@@ -4,6 +4,7 @@ import { requireRole } from '@/lib/session';
 import { getAdminDb } from '@/lib/firebase-server';
 import { COLLECTIONS } from '@shinebuild/firebase';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { revalidatePath } from 'next/cache';
 import type { LeadStatus } from '@shinebuild/shared';
 
 const VALID_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
@@ -68,6 +69,11 @@ export async function updateLeadStatus(
       createdAt: FieldValue.serverTimestamp(),
       metadata: { previousStatus: current, newStatus, note: note ?? null },
     });
+
+    // Revalidate staff and admin pages so they reflect the new status immediately
+    revalidatePath('/staff/leads');
+    revalidatePath('/staff/dashboard');
+    revalidatePath('/admin/leads');
 
     return {};
   } catch (err: any) {
