@@ -15,10 +15,6 @@ function last30Days() {
   });
 }
 
-function fmtDay(iso: string) {
-  return new Date(iso + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
-}
-
 export default async function SuperAdminDashboardPage() {
   const db = getAdminDb();
   let leadsSnap: any = null;
@@ -65,11 +61,12 @@ export default async function SuperAdminDashboardPage() {
   const maxCount = Math.max(...chartData.map((c) => c.count), 1);
   const periodTotal = chartData.reduce((s, c) => s + c.count, 0);
 
-  // SVG chart dimensions
-  const SVG_H = 110;
-  const SVG_W = 300;
-  const BAR_W = Math.floor((SVG_W - (chartData.length - 1) * 2) / chartData.length);
-  const GAP = 2;
+  // Chart dimensions — fixed pixel width, horizontal scroll on narrow screens
+  const BAR_W = 16;
+  const GAP = 3;
+  const SVG_W = chartData.length * (BAR_W + GAP) - GAP; // 567 for 30 bars
+  const SVG_H = 96;   // bar area height
+  const LABEL_H = 18; // label row height
 
   const stats = [
     { label: 'Total Leads', value: totalLeads, href: '/admin/leads', color: 'from-red-700 to-red-900' },
@@ -103,7 +100,7 @@ export default async function SuperAdminDashboardPage() {
         ))}
       </div>
 
-      {/* Performance Graph: Leads vs Day (SVG) */}
+      {/* Performance Graph */}
       <div className="glass-card rounded-2xl p-5">
         <div className="flex items-start justify-between mb-4">
           <div>
@@ -112,7 +109,7 @@ export default async function SuperAdminDashboardPage() {
               Last 30 days &mdash; <span className="font-semibold text-gray-700">{periodTotal}</span> leads total
             </p>
           </div>
-          <div className="flex items-center gap-3 text-[10px] text-gray-400">
+          <div className="flex items-center gap-3 text-[10px] text-gray-400 flex-shrink-0">
             <span className="flex items-center gap-1">
               <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: '#bf0000' }} />Today
             </span>
@@ -122,14 +119,14 @@ export default async function SuperAdminDashboardPage() {
           </div>
         </div>
 
-        {/* SVG Bar Chart */}
-        <div className="w-full overflow-hidden">
+        {/* Horizontally scrollable chart */}
+        <div className="overflow-x-auto -mx-1 px-1">
           <svg
-            viewBox={`0 0 ${SVG_W} ${SVG_H + 20}`}
-            preserveAspectRatio="none"
-            className="w-full"
-            style={{ height: '140px' }}
-            aria-label="Lead activity chart"
+            width={SVG_W}
+            height={SVG_H + LABEL_H}
+            viewBox={`0 0 ${SVG_W} ${SVG_H + LABEL_H}`}
+            style={{ display: 'block', minWidth: Math.min(SVG_W, 320) }}
+            aria-label="Lead activity chart — last 30 days"
           >
             <defs>
               <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
@@ -138,7 +135,7 @@ export default async function SuperAdminDashboardPage() {
               </linearGradient>
               <linearGradient id="todayGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#d10000" />
-                <stop offset="100%" stopColor="#bf0000" />
+                <stop offset="100%" stopColor="#9b0000" />
               </linearGradient>
             </defs>
 
@@ -151,44 +148,58 @@ export default async function SuperAdminDashboardPage() {
               );
             })}
 
-            {/* Bars */}
+            {/* Bars + count labels + day labels */}
             {chartData.map(({ day, count }, i) => {
-              const barH = count === 0 ? 2 : Math.max(8, Math.round((count / maxCount) * (SVG_H - 12)));
+              const barH = count === 0 ? 2 : Math.max(6, Math.round((count / maxCount) * (SVG_H - 10)));
               const x = i * (BAR_W + GAP);
               const y = SVG_H - barH;
               const isToday = day === today;
-              const labelY = y - 3;
+              const date = new Date(day + 'T00:00:00');
+              const dayNum = date.getDate();
+              // Show "DD" for most days; "D/M" (e.g. "1 M") for 1st of month
+              const dayLabel = dayNum === 1
+                ? `1 ${date.toLocaleDateString('en-IN', { month: 'short' }).slice(0, 3)}`
+                : String(dayNum).padStart(2, '0');
+              const labelColor = isToday ? '#bf0000' : dayNum === 1 ? '#6b7280' : '#9ca3af';
+              const labelWeight = isToday || dayNum === 1 ? '700' : '400';
+
               return (
                 <g key={day}>
+                  {/* Bar */}
                   <rect
-                    x={x} y={y} width={BAR_W} height={barH} rx={1.5}
+                    x={x} y={y} width={BAR_W} height={barH} rx={2}
                     fill={isToday ? 'url(#todayGrad)' : count === 0 ? '#f3f4f6' : 'url(#barGrad)'}
                   />
-                  {/* Count label on top of bar */}
+
+                  {/* Count on top of bar */}
                   {count > 0 && (
                     <>
-                      <rect x={x - 1} y={labelY - 7} width={BAR_W + 2} height={8} rx={2}
-                        fill={isToday ? '#bf0000' : '#6b7280'} opacity="0.9" />
-                      <text x={x + BAR_W / 2} y={labelY} textAnchor="middle"
-                        fontSize="5.5" fill="#ffffff" fontWeight="700">
+                      <rect x={x - 1} y={y - 8} width={BAR_W + 2} height={8} rx={2}
+                        fill={isToday ? '#9b0000' : '#6b7280'} opacity="0.85" />
+                      <text x={x + BAR_W / 2} y={y - 1.5} textAnchor="middle"
+                        fontSize="5" fill="#ffffff" fontWeight="700">
                         {count}
                       </text>
                     </>
                   )}
-                </g>
-              );
-            })}
 
-            {/* X-axis: show every 5th day label */}
-            {chartData.map(({ day }, i) => {
-              if (i % 5 !== 0 && i !== chartData.length - 1) return null;
-              const x = i * (BAR_W + GAP) + BAR_W / 2;
-              const label = i === chartData.length - 1 ? 'Today' : fmtDay(day);
-              return (
-                <text key={day} x={x} y={SVG_H + 14} textAnchor="middle"
-                  fontSize="7" fill={day === today ? '#bf0000' : '#9ca3af'} fontWeight={day === today ? '700' : '400'}>
-                  {label}
-                </text>
+                  {/* Day label below bar */}
+                  <text
+                    x={x + BAR_W / 2}
+                    y={SVG_H + LABEL_H - 4}
+                    textAnchor="middle"
+                    fontSize={dayNum === 1 ? '5' : '5.5'}
+                    fill={labelColor}
+                    fontWeight={labelWeight}
+                  >
+                    {dayLabel}
+                  </text>
+
+                  {/* Today indicator dot */}
+                  {isToday && (
+                    <circle cx={x + BAR_W / 2} cy={SVG_H + 3} r={2} fill="#bf0000" />
+                  )}
+                </g>
               );
             })}
           </svg>
@@ -202,7 +213,7 @@ export default async function SuperAdminDashboardPage() {
       {/* Quick actions */}
       <div className="glass-card rounded-2xl p-5">
         <h2 className="text-base font-bold text-gray-900 mb-3">Quick Actions</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {[
             { href: '/admin/leads', label: 'All Leads' },
             { href: '/admin/agents', label: 'Agents' },
@@ -215,7 +226,7 @@ export default async function SuperAdminDashboardPage() {
             <Link key={a.href} href={a.href}
               className="flex items-center justify-between rounded-xl glass px-4 py-3 text-sm font-medium text-gray-700 hover:text-gray-900 hover-lift">
               {a.label}
-              <svg className="h-4 w-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-4 w-4 text-gray-400 flex-shrink-0 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </Link>
