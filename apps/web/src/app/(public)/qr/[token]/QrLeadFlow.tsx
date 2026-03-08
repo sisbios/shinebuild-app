@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Input, Button } from '@shinebuild/ui';
+import { PhoneInput } from '@/components/shared/PhoneInput';
 import { OtpInput } from '@shinebuild/ui';
 import { PhoneOtpForm } from '@/components/auth/PhoneOtpForm';
 import { ConsentCheckbox } from '@/components/shared/ConsentCheckbox';
@@ -17,7 +18,7 @@ interface Props {
 export function QrLeadFlow({ tokenId }: Props) {
   const [step, setStep] = useState<Step>('form');
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState('+91');
   const [email, setEmail] = useState('');
   const [requirementNotes, setRequirementNotes] = useState('');
   const [city, setCity] = useState('');
@@ -95,9 +96,9 @@ export function QrLeadFlow({ tokenId }: Props) {
       <div className="space-y-4">
         <div>
           <h2 className="font-semibold text-gray-900">Verify your number</h2>
-          <p className="text-sm text-gray-500">We'll send an OTP to confirm your identity</p>
+          <p className="text-sm text-gray-500">Enter the OTP sent to <span className="font-medium text-gray-800">{phone}</span></p>
         </div>
-        <PhoneOtpForm onSuccess={handleOtpSuccess} submitLabel="Submit Lead" />
+        <PhoneOtpForm onSuccess={handleOtpSuccess} submitLabel="Submit Lead" initialPhone={phone} />
         <button
           onClick={() => setStep('form')}
           className="w-full text-center text-sm text-gray-500 hover:text-gray-700"
@@ -124,15 +125,11 @@ export function QrLeadFlow({ tokenId }: Props) {
         required
         autoComplete="name"
       />
-      <Input
-        label="Mobile Number"
-        type="tel"
-        placeholder="+91 98765 43210"
+      <PhoneInput
         value={phone}
-        onChange={(e) => setPhone(e.target.value)}
+        onChange={setPhone}
         error={errors['phone']}
         required
-        autoComplete="tel"
       />
       <Input
         label="Email (optional)"

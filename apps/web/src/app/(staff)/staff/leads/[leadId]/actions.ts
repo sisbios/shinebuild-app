@@ -22,10 +22,7 @@ export async function updateLeadStatusStaff(
   status: LeadStatus,
   note?: string
 ): Promise<{ error?: string }> {
-  const result = await updateLeadStatus(leadId, status, note);
-  if (!result.error) {
-    revalidatePath('/staff/leads');
-    revalidatePath('/staff/dashboard');
-  }
-  return result;
+  // updateLeadStatus already handles the write; no extra revalidation needed
+  // since the UI updates optimistically via QuickStatusButtons state
+  return updateLeadStatus(leadId, status, note);
 }

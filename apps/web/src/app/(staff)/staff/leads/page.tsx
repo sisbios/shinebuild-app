@@ -43,11 +43,11 @@ export default async function StaffLeadsPage({ searchParams }: Props) {
   let allLeads: LeadRow[] = [];
 
   try {
+    // No orderBy — array-contains + orderBy requires a composite index.
+    // Sort in memory below instead.
     const snap = await db
       .collection(COLLECTIONS.LEADS)
       .where('assignedStaffIds', 'array-contains', session!.uid)
-      .orderBy('createdAt', 'desc')
-      .limit(100)
       .get();
 
     allLeads = snap.docs.map((doc) => {
@@ -61,7 +61,7 @@ export default async function StaffLeadsPage({ searchParams }: Props) {
         requirementNotes: d['requirementNotes'] ?? '',
         createdAt: d['createdAt']?.toDate() ?? new Date(),
       };
-    });
+    }).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   } catch (e) {
     console.error('StaffLeadsPage error:', e);
   }
@@ -79,9 +79,20 @@ export default async function StaffLeadsPage({ searchParams }: Props) {
     <div className="space-y-5">
 
       {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold text-gray-900">My Leads</h1>
-        <p className="text-sm text-gray-500 mt-0.5">{allLeads.length} total leads assigned</p>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">My Leads</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{allLeads.length} total leads assigned</p>
+        </div>
+        <Link
+          href="/staff/leads/new"
+          className="flex items-center gap-1.5 rounded-xl brand-gradient px-3.5 py-2 text-sm font-semibold text-white shadow-sm flex-shrink-0"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+          New Lead
+        </Link>
       </div>
 
       {/* Filter tabs */}

@@ -8,15 +8,19 @@ export default async function StaffLayout({ children }: { children: React.ReactN
   const session = await getServerSession();
   const db = getAdminDb();
 
-  // Fetch pending lead count for the badge on nav
+  // Fetch pending lead count for the badge on nav.
+  // Use single-field where only — compound where+array-contains needs a composite index.
+  // Count pending status in memory.
   let pendingCount = 0;
   try {
     const snap = await db
       .collection(COLLECTIONS.LEADS)
       .where('assignedStaffIds', 'array-contains', session!.uid)
-      .where('status.current', 'in', ['new', 'contacted'])
       .get();
-    pendingCount = snap.size;
+    pendingCount = snap.docs.filter((d) => {
+      const s = d.data()['status']?.['current'];
+      return s === 'new' || s === 'contacted';
+    }).length;
   } catch { /* non-critical */ }
 
   return (

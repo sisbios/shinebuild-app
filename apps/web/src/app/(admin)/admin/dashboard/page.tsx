@@ -4,23 +4,21 @@ import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
+// firebase-admin Query.count() exists at runtime but TS types lag — cast helper
+const cnt = (q: any): Promise<number> => q.count().get().then((s: any) => s.data().count as number);
+
 export default async function AdminDashboardPage() {
   const db = getAdminDb();
   let totalLeads = 0, newLeads = 0, qualifiedLeads = 0, pendingAgents = 0, totalStaff = 0;
 
   try {
-    const [leadsSnap, newSnap, qualSnap, pendingSnap, staffSnap] = await Promise.all([
-      db.collection(COLLECTIONS.LEADS).get(),
-      db.collection(COLLECTIONS.LEADS).where('status.current', '==', 'new').get(),
-      db.collection(COLLECTIONS.LEADS).where('status.current', '==', 'qualified').get(),
-      db.collection(COLLECTIONS.USERS).where('role', '==', 'agent').where('status', '==', 'pending').get(),
-      db.collection(COLLECTIONS.USERS).where('role', '==', 'staff').get(),
+    [totalLeads, newLeads, qualifiedLeads, pendingAgents, totalStaff] = await Promise.all([
+      cnt(db.collection(COLLECTIONS.LEADS)),
+      cnt(db.collection(COLLECTIONS.LEADS).where('status.current', '==', 'new')),
+      cnt(db.collection(COLLECTIONS.LEADS).where('status.current', '==', 'qualified')),
+      cnt(db.collection(COLLECTIONS.USERS).where('role', '==', 'agent').where('status', '==', 'pending')),
+      cnt(db.collection(COLLECTIONS.USERS).where('role', '==', 'staff')),
     ]);
-    totalLeads = leadsSnap.size;
-    newLeads = newSnap.size;
-    qualifiedLeads = qualSnap.size;
-    pendingAgents = pendingSnap.size;
-    totalStaff = staffSnap.size;
   } catch {}
 
   return (

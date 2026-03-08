@@ -1,13 +1,13 @@
 import { getAdminDb } from '@/lib/firebase-server';
 import { COLLECTIONS } from '@shinebuild/firebase';
-import { AdminLeadsList } from './AdminLeadsList';
+import { AdminLeadsList } from '@/app/(admin)/admin/leads/AdminLeadsList';
 import type { LeadStatus } from '@shinebuild/shared';
 
 export const dynamic = 'force-dynamic';
 
 interface Props { searchParams: Promise<{ status?: string; city?: string }> }
 
-export default async function AdminLeadsPage({ searchParams }: Props) {
+export default async function SuperAdminLeadsPage({ searchParams }: Props) {
   const sp = await searchParams;
   const db = getAdminDb();
   let leads: Array<{
@@ -16,9 +16,7 @@ export default async function AdminLeadsPage({ searchParams }: Props) {
   }> = [];
 
   try {
-    // Fetch latest 200 leads sorted by date — single-field orderBy needs no composite index.
-    // Apply status/city filters in memory to avoid composite index requirements.
-    const snap = await db.collection(COLLECTIONS.LEADS).orderBy('createdAt', 'desc').limit(200).get();
+    const snap = await db.collection(COLLECTIONS.LEADS).orderBy('createdAt', 'desc').limit(500).get();
     leads = snap.docs.map((doc) => {
       const d = doc.data();
       return {
@@ -33,13 +31,16 @@ export default async function AdminLeadsPage({ searchParams }: Props) {
     if (sp.status) leads = leads.filter((l) => l.status === sp.status);
     if (sp.city) leads = leads.filter((l) => l.city?.toLowerCase().includes(sp.city!.toLowerCase()));
   } catch (e) {
-    console.error('AdminLeadsPage error:', e);
+    console.error('SuperAdminLeadsPage error:', e);
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Leads <span className="text-sm font-normal text-gray-400">({leads.length})</span></h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Leads Management</h1>
+          <p className="text-xs text-gray-400 mt-0.5">{leads.length} leads — click a lead to edit, reassign staff, or delete</p>
+        </div>
       </div>
 
       {/* Filters */}
@@ -55,6 +56,14 @@ export default async function AdminLeadsPage({ searchParams }: Props) {
           className="rounded-xl border border-gray-200 bg-white/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-300 flex-1 min-w-[120px]" />
         <button type="submit" className="rounded-xl brand-gradient px-4 py-2 text-sm font-semibold text-white">Filter</button>
       </form>
+
+      {/* Superadmin tip */}
+      <div className="rounded-xl bg-purple-50 border border-purple-200 px-4 py-2.5 flex items-center gap-2 text-xs text-purple-700">
+        <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>Open any lead to <strong>edit details</strong>, <strong>reassign staff</strong>, update status, or <strong>delete</strong>. The amber "Edit Lead" button is superadmin-only.</span>
+      </div>
 
       <AdminLeadsList initialLeads={leads} />
     </div>

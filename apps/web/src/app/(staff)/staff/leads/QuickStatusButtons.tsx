@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { updateLeadStatusStaff } from './[leadId]/actions';
 import type { LeadStatus } from '@shinebuild/shared';
 
@@ -45,12 +44,31 @@ interface Props {
 }
 
 export function QuickStatusButtons({ leadId, status, variant = 'compact' }: Props) {
-  const router = useRouter();
   const [loading, setLoading] = useState<LeadStatus | null>(null);
-  const [done, setDone] = useState(false);
+  const [doneStatus, setDoneStatus] = useState<LeadStatus | null>(null);
 
   const transitions = TRANSITIONS[status] ?? [];
-  if (transitions.length === 0 || done) return null;
+  if (transitions.length === 0) return null;
+
+  // Show immediate local confirmation — no router.refresh() needed
+  if (doneStatus) {
+    const COLOR: Record<LeadStatus, string> = {
+      qualified: 'text-green-700 bg-green-50 border-green-200',
+      rejected: 'text-red-600 bg-red-50 border-red-200',
+      contacted: 'text-blue-700 bg-blue-50 border-blue-200',
+      converted: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+      duplicate: 'text-gray-600 bg-gray-50 border-gray-200',
+      new: 'text-gray-600 bg-gray-50 border-gray-200',
+    };
+    return (
+      <div className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold ${COLOR[doneStatus] ?? 'text-gray-600 bg-gray-50 border-gray-200'}`}>
+        <svg className="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+        </svg>
+        Marked as {doneStatus}
+      </div>
+    );
+  }
 
   const handleClick = async (next: LeadStatus, e: React.MouseEvent) => {
     e.preventDefault();
@@ -59,8 +77,7 @@ export function QuickStatusButtons({ leadId, status, variant = 'compact' }: Prop
     const result = await updateLeadStatusStaff(leadId, next);
     setLoading(null);
     if (!result.error) {
-      setDone(true);
-      router.refresh();
+      setDoneStatus(next); // instant UI feedback — no page reload needed
     }
   };
 

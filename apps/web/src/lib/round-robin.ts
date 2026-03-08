@@ -11,11 +11,12 @@ import { FieldValue } from 'firebase-admin/firestore';
 export async function getNextStaffRoundRobin(): Promise<string | null> {
   const db = getAdminDb();
 
-  // Fetch all active staff
+  // Fetch all active staff that are assigned for lead quality assessment
   const staffSnap = await db
     .collection(COLLECTIONS.USERS)
     .where('role', '==', 'staff')
     .where('status', '==', 'active')
+    .where('assignedForAssessment', '==', true)
     .get();
 
   if (staffSnap.empty) return null;

@@ -9,16 +9,17 @@ import {
 import { getClientAuth } from '@/lib/firebase-client';
 import { Button } from '@shinebuild/ui';
 import { OtpInput } from '@shinebuild/ui';
-import { Input } from '@shinebuild/ui';
+import { PhoneInput } from '@/components/shared/PhoneInput';
 import { toE164 } from '@shinebuild/shared';
 
 interface Props {
   onSuccess: (uid: string, idToken: string) => Promise<void>;
   submitLabel?: string;
+  initialPhone?: string; // when provided, skip phone entry and auto-send OTP
 }
 
-export function PhoneOtpForm({ onSuccess, submitLabel = 'Verify & Continue' }: Props) {
-  const [phone, setPhone] = useState('');
+export function PhoneOtpForm({ onSuccess, submitLabel = 'Verify & Continue', initialPhone }: Props) {
+  const [phone, setPhone] = useState(initialPhone ?? '+91');
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [loading, setLoading] = useState(false);
@@ -39,6 +40,15 @@ export function PhoneOtpForm({ onSuccess, submitLabel = 'Verify & Continue' }: P
       verifier.render().catch(() => {}); // pre-render silently
     } catch { /* ignore — will retry on sendOtp */ }
   }, []);
+
+  // Auto-send OTP when phone is pre-filled (customer already entered it in a prior step)
+  useEffect(() => {
+    if (initialPhone && initialPhone.length >= 13) {
+      // Small delay so reCAPTCHA pre-warm has a chance to complete
+      const t = setTimeout(() => sendOtp(), 300);
+      return () => clearTimeout(t);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const getRecaptchaVerifier = (): RecaptchaVerifier => {
     if (recaptchaRef.current) return recaptchaRef.current;
@@ -94,28 +104,33 @@ export function PhoneOtpForm({ onSuccess, submitLabel = 'Verify & Continue' }: P
 
   return (
     <div className="space-y-5">
-      {step === 'phone' ? (
+      {step === 'phone' && !initialPhone ? (
         <>
-          <Input
-            label="Mobile Number"
-            type="tel"
-            placeholder="+91 98765 43210"
+          <PhoneInput
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={setPhone}
             error={error}
             required
-            autoComplete="tel"
-            inputMode="tel"
           />
           <Button
             size="full"
             onClick={sendOtp}
             loading={loading}
-            disabled={!phone}
+            disabled={phone.length < 13}
           >
             Send OTP
           </Button>
         </>
+      ) : step === 'phone' && initialPhone ? (
+        /* Auto-sending state — show a spinner while OTP is dispatched */
+        <div className="flex flex-col items-center gap-3 py-4">
+          <svg className="h-6 w-6 animate-spin text-red-600" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          <p className="text-sm text-gray-600">Sending OTP to <span className="font-semibold">{phone}</span>…</p>
+          {error && <p className="text-sm text-red-600">{error}</p>}
+        </div>
       ) : (
         <>
           <div className="space-y-2">

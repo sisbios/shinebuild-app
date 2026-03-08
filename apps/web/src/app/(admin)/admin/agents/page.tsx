@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { AgentStatus } from '@shinebuild/shared';
 
 export const dynamic = 'force-dynamic';
+const cnt = (q: any): Promise<number> => q.count().get().then((s: any) => s.data().count as number);
 
 const STATUS_STYLE: Record<string, string> = {
   pending: 'bg-amber-100 text-amber-700',
@@ -30,8 +31,7 @@ export default async function AdminAgentsPage({ searchParams }: Props) {
         createdAt: d['createdAt']?.toDate() ?? new Date(), leadCount: 0 };
     });
     const counts = await Promise.all(
-      raw.map((a: any) => db.collection(COLLECTIONS.LEADS).where('agentId', '==', a.uid).get()
-        .then((s: any) => s.size).catch(() => 0))
+      raw.map((a: any) => cnt(db.collection(COLLECTIONS.LEADS).where('agentId', '==', a.uid)).catch(() => 0))
     );
     agents = raw.map((a: any, i: number) => ({ ...a, leadCount: counts[i] }));
     if (sp.sort === 'leads') agents.sort((a, b) => b.leadCount - a.leadCount);

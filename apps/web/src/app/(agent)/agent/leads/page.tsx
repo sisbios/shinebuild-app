@@ -3,6 +3,7 @@ import { getAdminDb } from '@/lib/firebase-server';
 import { COLLECTIONS } from '@shinebuild/firebase';
 import Link from 'next/link';
 import { LeadStatusBadge } from '@/components/leads/LeadStatusBadge';
+import { maskName, maskPhone } from '@shinebuild/shared';
 import type { LeadStatus } from '@shinebuild/shared';
 
 export const dynamic = 'force-dynamic';
@@ -14,29 +15,34 @@ export default async function AgentLeadsPage() {
   let leads: Array<{ id: string; referenceId: string; maskedName: string; maskedPhone: string; status: LeadStatus; city: string; incentiveAmount: number; createdAt: Date }> = [];
 
   try {
-    // Query without orderBy to avoid composite index requirement while indexes build.
-    // Sort in memory instead.
+    if (!session?.uid) throw new Error('No session');
+    console.log('[AgentLeads] querying leads for agentId:', session.uid);
+    // Query leads directly via Admin SDK (bypasses security rules).
+    // Single-field where('agentId') needs no composite index.
+    // Sort in memory to avoid array-contains+orderBy composite index requirement.
     const snap = await db
-      .collectionGroup(COLLECTIONS.AGENT_VIEW)
-      .where('agentId', '==', session!.uid)
-      .limit(100)
+      .collection(COLLECTIONS.LEADS)
+      .where('agentId', '==', session.uid)
       .get();
 
     leads = snap.docs
       .map((doc) => {
         const d = doc.data();
+        const customerName = d['customer']?.['name'] ?? '';
+        const customerPhone = d['customer']?.['phoneE164'] ?? '';
         return {
-          id: doc.ref.parent.parent!.id,
-          referenceId: d['referenceId'] ?? doc.ref.parent.parent!.id.slice(-6).toUpperCase(),
-          maskedName: d['maskedName'] ?? '***',
-          maskedPhone: d['maskedPhone'] ?? '***',
-          status: (d['status'] as LeadStatus) ?? 'new',
+          id: doc.id,
+          referenceId: doc.id.slice(-6).toUpperCase(),
+          maskedName: customerName ? maskName(customerName) : '(Direct entry)',
+          maskedPhone: customerPhone ? maskPhone(customerPhone) : '—',
+          status: (d['status']?.['current'] as LeadStatus) ?? 'new',
           city: d['city'] ?? '',
-          incentiveAmount: d['incentiveAmount'] ?? 0,
+          incentiveAmount: d['incentive']?.['amount'] ?? 0,
           createdAt: d['createdAt']?.toDate() ?? new Date(),
         };
       })
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, 100);
   } catch (e) {
     console.error('AgentLeadsPage query error:', e);
   }

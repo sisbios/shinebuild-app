@@ -29,6 +29,16 @@ const NAV = [
       </svg>
     ),
   },
+  {
+    href: '/staff/leads/new',
+    label: 'New Lead',
+    icon: (active: boolean) => (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={active ? 2.5 : 1.75}
+          d="M12 4v16m8-8H4" />
+      </svg>
+    ),
+  },
 ];
 
 export function StaffNav({ pendingCount = 0 }: { pendingCount?: number }) {

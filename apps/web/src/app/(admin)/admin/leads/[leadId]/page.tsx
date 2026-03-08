@@ -4,7 +4,11 @@ import { LeadStatusBadge } from '@/components/leads/LeadStatusBadge';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { LeadStatusUpdater } from './LeadStatusUpdater';
+import { LeadDeleteButton } from './LeadDeleteButton';
+import { StaffAssignPanel } from './StaffAssignPanel';
+import { LeadEditForm } from './LeadEditForm';
 import { PhotoGallery } from '@/components/shared/PhotoGallery';
+import { getServerSession } from '@/lib/session';
 import type { LeadStatus } from '@shinebuild/shared';
 
 export const dynamic = 'force-dynamic';
@@ -15,9 +19,17 @@ interface Props {
 
 export default async function AdminLeadDetailPage({ params }: Props) {
   const { leadId } = await params;
+  const session = await getServerSession();
+  const isSuperAdmin = session?.role === 'superadmin';
   const db = getAdminDb();
 
-  const snap = await db.collection(COLLECTIONS.LEADS).doc(leadId).get();
+  const [snap, staffSnap] = await Promise.all([
+    db.collection(COLLECTIONS.LEADS).doc(leadId).get(),
+    db.collection(COLLECTIONS.USERS)
+      .where('role', '==', 'staff')
+      .where('status', '==', 'active')
+      .get(),
+  ]);
   if (!snap.exists) notFound();
 
   const d = snap.data()!;
@@ -27,6 +39,15 @@ export default async function AdminLeadDetailPage({ params }: Props) {
   const photoUrls = photos.map(
     (path) => `/api/photo?path=${encodeURIComponent(path)}`
   );
+
+  const allStaff = staffSnap.docs.map((doc) => ({
+    uid: doc.id,
+    name: doc.data()['name'] ?? '—',
+    phone: doc.data()['phone'] ?? '',
+  }));
+
+  const assignedStaffIds: string[] = d['assignedStaffIds'] ?? [];
+  const assignedStaff = allStaff.filter((s) => assignedStaffIds.includes(s.uid));
 
   const lead = {
     id: leadId,
@@ -50,10 +71,28 @@ export default async function AdminLeadDetailPage({ params }: Props) {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <Link href="/admin/leads" className="text-gray-400 hover:text-gray-600">← Leads</Link>
         <h1 className="text-xl font-bold text-gray-900">Lead Detail</h1>
         <LeadStatusBadge status={lead.status.current} />
+        <div className="ml-auto flex items-center gap-2">
+          {isSuperAdmin && (
+            <LeadEditForm
+              leadId={leadId}
+              initial={{
+                customerName: lead.customer.name,
+                customerPhone: lead.customer.phoneE164,
+                city: lead.city,
+                requirementNotes: lead.requirementNotes ?? '',
+              }}
+            />
+          )}
+          <LeadDeleteButton
+            leadId={leadId}
+            customerName={lead.customer.name}
+            redirectAfterDelete="/admin/leads"
+          />
+        </div>
       </div>
 
       {lead.duplicateOfLeadId && (
@@ -130,6 +169,13 @@ export default async function AdminLeadDetailPage({ params }: Props) {
         </h2>
         <PhotoGallery urls={photoUrls} />
       </section>
+
+      {/* Staff assignment */}
+      <StaffAssignPanel
+        leadId={leadId}
+        assignedStaff={assignedStaff}
+        allStaff={allStaff}
+      />
 
       {/* Status update */}
       <LeadStatusUpdater leadId={leadId} currentStatus={lead.status.current} />

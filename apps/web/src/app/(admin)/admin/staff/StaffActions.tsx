@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { updateStaffStatus, deleteStaffMember } from './actions';
+import { updateStaffStatus, deleteStaffMember, toggleAssessmentAssignment, promoteToSuperAdmin } from './actions';
 
-interface Props { uid: string; name: string; currentStatus: string; }
+interface Props { uid: string; name: string; currentStatus: string; assignedForAssessment: boolean; canPromote?: boolean; }
 
-export function StaffActions({ uid, name, currentStatus }: Props) {
+export function StaffActions({ uid, name, currentStatus, assignedForAssessment: initAssigned, canPromote }: Props) {
   const [loading, setLoading] = useState('');
+  const [assigned, setAssigned] = useState(initAssigned);
 
   const run = async (action: () => Promise<{ error?: string }>, key: string) => {
     setLoading(key);
@@ -15,8 +16,44 @@ export function StaffActions({ uid, name, currentStatus }: Props) {
     if (res.error) alert(res.error);
   };
 
+  const handleToggleAssessment = async () => {
+    setLoading('qa');
+    const next = !assigned;
+    const res = await toggleAssessmentAssignment(uid, next);
+    setLoading('');
+    if (res.error) { alert(res.error); return; }
+    setAssigned(next);
+  };
+
   return (
     <div className="flex items-center justify-end gap-1">
+      {/* Promote to superadmin — superadmin only */}
+      {canPromote && (
+        <button
+          disabled={!!loading}
+          onClick={() => {
+            if (confirm(`Promote "${name}" to Super Admin? They will gain full system access.`))
+              run(() => promoteToSuperAdmin(uid), 'promote');
+          }}
+          className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 disabled:opacity-50 transition-colors"
+          title="Promote to Super Admin"
+        >
+          {loading === 'promote' ? '…' : '★ SA'}
+        </button>
+      )}
+      {/* QA Assessment toggle */}
+      <button
+        disabled={!!loading}
+        onClick={handleToggleAssessment}
+        title={assigned ? 'Remove from QA assignment' : 'Assign for lead quality assessment'}
+        className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
+          assigned
+            ? 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+        }`}
+      >
+        {loading === 'qa' ? '…' : assigned ? 'QA ✓' : 'QA'}
+      </button>
       {currentStatus === 'active' ? (
         <button
           disabled={!!loading}

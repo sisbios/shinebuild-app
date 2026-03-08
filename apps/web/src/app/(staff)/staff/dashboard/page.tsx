@@ -3,6 +3,7 @@ import { getAdminDb } from '@/lib/firebase-server';
 import { COLLECTIONS } from '@shinebuild/firebase';
 import type { LeadStatus } from '@shinebuild/shared';
 import { LeadCard } from '@/app/(staff)/staff/leads/LeadCard';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,10 +31,10 @@ export default async function StaffDashboardPage() {
   try {
     const [userSnap, leadsSnap] = await Promise.all([
       db.collection(COLLECTIONS.USERS).doc(session!.uid).get(),
+      // No orderBy — array-contains + orderBy requires a composite index that may not be deployed.
+      // We sort in memory below instead.
       db.collection(COLLECTIONS.LEADS)
         .where('assignedStaffIds', 'array-contains', session!.uid)
-        .orderBy('createdAt', 'desc')
-        .limit(200)
         .get(),
     ]);
 
@@ -111,9 +112,30 @@ export default async function StaffDashboardPage() {
         </div>
       </div>
 
+      {/* ── Quick action ── */}
+      <Link
+        href="/staff/leads/new"
+        className="flex items-center justify-between glass-card rounded-2xl px-5 py-3.5 hover-lift"
+      >
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 rounded-xl brand-gradient flex items-center justify-center shadow-sm flex-shrink-0">
+            <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-gray-900">Add New Lead</p>
+            <p className="text-xs text-gray-400">Enter customer details manually</p>
+          </div>
+        </div>
+        <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      </Link>
+
       {/* ── All lead cards ── */}
       {leads.length === 0 ? (
-        <div className="glass-card rounded-3xl py-20 text-center">
+        <div className="glass-card rounded-3xl py-16 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-50 border border-gray-200">
             <svg className="h-8 w-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
@@ -121,7 +143,7 @@ export default async function StaffDashboardPage() {
             </svg>
           </div>
           <p className="text-sm font-semibold text-gray-500">No leads assigned yet</p>
-          <p className="text-xs text-gray-400 mt-1">Check back later or contact your admin</p>
+          <p className="text-xs text-gray-400 mt-1">Use the button above to add your first lead</p>
         </div>
       ) : (
         <div className="space-y-3">
