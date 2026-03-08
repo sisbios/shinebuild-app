@@ -96,7 +96,7 @@ jobs:
           docker pull ghcr.io/sisbios/shinebuild-app:${IMAGE_TAG}
           docker tag ghcr.io/sisbios/shinebuild-app:${IMAGE_TAG} shinebuild:local
 
-          cd /root/shinebuild
+          cd /home/runner/shinebuild
           {
             printf 'NEXT_PUBLIC_FIREBASE_API_KEY="%s"\n'         "${NEXT_PUBLIC_FIREBASE_API_KEY}"
             printf 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="%s"\n'     "${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}"
