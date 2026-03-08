@@ -71,69 +71,63 @@ jobs:
   deploy:
     name: Deploy to VPS2
     needs: build-and-push
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, vps2]
+
+    env:
+      IMAGE_TAG: sha-${{ needs.build-and-push.outputs.sha_short }}
+      GHCR_PAT: ${{ secrets.GHCR_PAT }}
+      NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+      NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
+      NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY }}
+      FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+      FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+      COOKIE_SECRET_CURRENT: ${{ secrets.COOKIE_SECRET_CURRENT }}
+      COOKIE_SECRET_PREVIOUS: ${{ secrets.COOKIE_SECRET_PREVIOUS }}
 
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        env:
-          IMAGE_TAG: sha-${{ needs.build-and-push.outputs.sha_short }}
-          GHCR_PAT: ${{ secrets.GHCR_PAT }}
-          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
-          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
-          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
-          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
-          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
-          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
-          NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY }}
-          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
-          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
-          COOKIE_SECRET_CURRENT: ${{ secrets.COOKIE_SECRET_CURRENT }}
-          COOKIE_SECRET_PREVIOUS: ${{ secrets.COOKIE_SECRET_PREVIOUS }}
-        with:
-          host: 148.230.66.216
-          username: root
-          password: ${{ secrets.VPS2_SSH_PASSWORD }}
-          envs: IMAGE_TAG,GHCR_PAT,NEXT_PUBLIC_FIREBASE_API_KEY,NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,NEXT_PUBLIC_FIREBASE_PROJECT_ID,NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,NEXT_PUBLIC_FIREBASE_APP_ID,NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY,FIREBASE_CLIENT_EMAIL,FIREBASE_PRIVATE_KEY,COOKIE_SECRET_CURRENT,COOKIE_SECRET_PREVIOUS
-          script: |
-            set -e
-            echo "$GHCR_PAT" | docker login ghcr.io -u sisbios --password-stdin
-            docker pull ghcr.io/sisbios/shinebuild-app:${IMAGE_TAG}
-            docker tag ghcr.io/sisbios/shinebuild-app:${IMAGE_TAG} shinebuild:local
+      - name: Deploy on VPS2
+        run: |
+          set -e
+          echo "$GHCR_PAT" | docker login ghcr.io -u sisbios --password-stdin
+          docker pull ghcr.io/sisbios/shinebuild-app:${IMAGE_TAG}
+          docker tag ghcr.io/sisbios/shinebuild-app:${IMAGE_TAG} shinebuild:local
 
-            cd /root/shinebuild
-            {
-              printf 'NEXT_PUBLIC_FIREBASE_API_KEY="%s"\n'         "${NEXT_PUBLIC_FIREBASE_API_KEY}"
-              printf 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="%s"\n'     "${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}"
-              printf 'NEXT_PUBLIC_FIREBASE_PROJECT_ID="%s"\n'      "${NEXT_PUBLIC_FIREBASE_PROJECT_ID}"
-              printf 'FIREBASE_PROJECT_ID="%s"\n'                  "${NEXT_PUBLIC_FIREBASE_PROJECT_ID}"
-              printf 'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="%s"\n'  "${NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}"
-              printf 'FIREBASE_STORAGE_BUCKET="%s"\n'             "${NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}"
-              printf 'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="%s"\n' "${NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}"
-              printf 'NEXT_PUBLIC_FIREBASE_APP_ID="%s"\n'          "${NEXT_PUBLIC_FIREBASE_APP_ID}"
-              printf 'NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY="%s"\n' "${NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY:-}"
-              printf 'FIREBASE_CLIENT_EMAIL="%s"\n'                "${FIREBASE_CLIENT_EMAIL}"
-              printf 'FIREBASE_PRIVATE_KEY="%s"\n'                 "${FIREBASE_PRIVATE_KEY}"
-              printf 'COOKIE_SECRET_CURRENT="%s"\n'                "${COOKIE_SECRET_CURRENT}"
-              printf 'COOKIE_SECRET_PREVIOUS="%s"\n'               "${COOKIE_SECRET_PREVIOUS}"
-              printf 'NODE_ENV=production\n'
-              printf 'HOSTNAME=0.0.0.0\n'
-              printf 'PORT=3000\n'
-              printf 'NEXT_TELEMETRY_DISABLED=1\n'
-            } > .env
-            echo "Written $(wc -l < .env) lines to .env"
+          cd /root/shinebuild
+          {
+            printf 'NEXT_PUBLIC_FIREBASE_API_KEY="%s"\n'         "${NEXT_PUBLIC_FIREBASE_API_KEY}"
+            printf 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="%s"\n'     "${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}"
+            printf 'NEXT_PUBLIC_FIREBASE_PROJECT_ID="%s"\n'      "${NEXT_PUBLIC_FIREBASE_PROJECT_ID}"
+            printf 'FIREBASE_PROJECT_ID="%s"\n'                  "${NEXT_PUBLIC_FIREBASE_PROJECT_ID}"
+            printf 'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="%s"\n'  "${NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}"
+            printf 'FIREBASE_STORAGE_BUCKET="%s"\n'              "${NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}"
+            printf 'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="%s"\n' "${NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}"
+            printf 'NEXT_PUBLIC_FIREBASE_APP_ID="%s"\n'          "${NEXT_PUBLIC_FIREBASE_APP_ID}"
+            printf 'NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY="%s"\n' "${NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY:-}"
+            printf 'FIREBASE_CLIENT_EMAIL="%s"\n'                "${FIREBASE_CLIENT_EMAIL}"
+            printf 'FIREBASE_PRIVATE_KEY="%s"\n'                 "${FIREBASE_PRIVATE_KEY}"
+            printf 'COOKIE_SECRET_CURRENT="%s"\n'                "${COOKIE_SECRET_CURRENT}"
+            printf 'COOKIE_SECRET_PREVIOUS="%s"\n'               "${COOKIE_SECRET_PREVIOUS}"
+            printf 'NODE_ENV=production\n'
+            printf 'HOSTNAME=0.0.0.0\n'
+            printf 'PORT=3000\n'
+            printf 'NEXT_TELEMETRY_DISABLED=1\n'
+          } > .env
 
-            IMAGE_TAG=${IMAGE_TAG} docker compose up -d --force-recreate
+          IMAGE_TAG=${IMAGE_TAG} docker compose up -d --force-recreate
 
-            for i in $(seq 1 5); do
-              sleep 8
-              STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/api/health || echo "000")
-              echo "Health check $i: HTTP $STATUS"
-              if [ "$STATUS" = "200" ]; then
-                echo "Deployment successful!"
-                exit 0
-              fi
-            done
-            echo "Health check failed"
-            docker logs --tail=50 shinebuild
-            exit 1
+          for i in $(seq 1 5); do
+            sleep 8
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/api/health || echo "000")
+            echo "Health check $i: HTTP $STATUS"
+            if [ "$STATUS" = "200" ]; then
+              echo "Deployment successful!"
+              exit 0
+            fi
+          done
+          echo "Health check failed"
+          docker logs --tail=50 shinebuild
+          exit 1
