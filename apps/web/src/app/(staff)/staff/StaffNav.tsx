@@ -49,12 +49,7 @@ export function StaffNav({ pendingCount = 0 }: { pendingCount?: number }) {
       {/* ── Desktop / Tablet top header ── */}
       <header className="glass-header fixed top-0 inset-x-0 z-40 h-14 flex items-center px-4 lg:px-8">
         <div className="flex items-center gap-3 flex-1">
-          <div className="h-8 w-8 rounded-xl brand-gradient flex items-center justify-center shadow-md flex-shrink-0">
-            <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          </div>
+          <img src="/icons/logo-96.png" alt="Shine Build Hub" className="h-8 w-8 rounded-xl object-cover shadow-md flex-shrink-0" />
           <div className="leading-tight">
             <p className="text-sm font-bold text-gray-900 leading-none">Shine Build Hub</p>
             <p className="text-[10px] text-gray-500">Staff Portal</p>

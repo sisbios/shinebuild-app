@@ -87,12 +87,7 @@ export function SuperAdminNav() {
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex flex-col w-64 fixed inset-y-0 left-0 z-40 glass-card border-r border-white/40">
         <div className="flex items-center gap-3 px-5 py-5 border-b border-white/30">
-          <div className="h-9 w-9 rounded-xl brand-gradient flex items-center justify-center shadow-md">
-            <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-          </div>
+          <img src="/icons/logo-96.png" alt="Shine Build Hub" className="h-9 w-9 rounded-xl object-cover shadow-md flex-shrink-0" />
           <div>
             <p className="text-sm font-bold text-gray-900">Super Admin</p>
             <p className="text-xs text-gray-500">Shine Build Hub</p>
@@ -127,12 +122,7 @@ export function SuperAdminNav() {
       {/* Mobile header */}
       <header className="lg:hidden glass-header fixed top-0 inset-x-0 z-40 px-4 h-14 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="h-7 w-7 rounded-lg brand-gradient flex items-center justify-center">
-            <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-          </div>
+          <img src="/icons/logo-96.png" alt="Shine Build Hub" className="h-7 w-7 rounded-lg object-cover flex-shrink-0" />
           <span className="text-sm font-bold text-gray-900">Super Admin</span>
         </div>
         <div className="flex items-center gap-2">

@@ -7,6 +7,22 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+const DISMISS_KEY = 'pwa-dismissed-until';
+const DISMISS_DAYS = 7;
+
+function isDismissed() {
+  try {
+    const until = localStorage.getItem(DISMISS_KEY);
+    return until ? Date.now() < parseInt(until, 10) : false;
+  } catch { return false; }
+}
+
+function setDismissed() {
+  try {
+    localStorage.setItem(DISMISS_KEY, String(Date.now() + DISMISS_DAYS * 86400_000));
+  } catch {}
+}
+
 export function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
@@ -17,12 +33,11 @@ export function InstallPrompt() {
       window.matchMedia('(display-mode: standalone)').matches ||
       (window.navigator as any).standalone === true;
     if (isStandalone) return;
-    if (sessionStorage.getItem('pwa-dismissed')) return;
+    if (isDismissed()) return;
 
     const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !(window as any).MSStream;
     if (ios) {
       setIsIos(true);
-      // Show iOS hint after 4s
       const t = setTimeout(() => setVisible(true), 4000);
       return () => clearTimeout(t);
     }
@@ -37,7 +52,7 @@ export function InstallPrompt() {
   }, []);
 
   const dismiss = () => {
-    sessionStorage.setItem('pwa-dismissed', '1');
+    setDismissed();
     setVisible(false);
   };
 
@@ -52,14 +67,13 @@ export function InstallPrompt() {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-24 left-3 right-3 z-50 md:left-auto md:right-5 md:w-80 animate-in slide-in-from-bottom-4 duration-300">
-      <div className="glass-card rounded-2xl p-4 flex items-start gap-3">
-        <div className="h-11 w-11 brand-gradient rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
-          <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-          </svg>
-        </div>
+    <div className="fixed bottom-24 left-3 right-3 z-50 md:bottom-6 md:left-auto md:right-6 md:w-80 animate-in slide-in-from-bottom-4 duration-300">
+      <div className="glass-card rounded-2xl p-4 shadow-xl flex items-start gap-3">
+        <img
+          src="/icons/logo-96.png"
+          alt="Shine Build Hub"
+          className="h-11 w-11 rounded-xl object-cover flex-shrink-0 shadow-md"
+        />
         <div className="flex-1">
           <p className="text-sm font-bold text-gray-900">Install Shine Build Hub</p>
           {isIos ? (
