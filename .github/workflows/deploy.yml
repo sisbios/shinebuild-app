@@ -99,6 +99,7 @@ jobs:
             set -e
             echo "$GHCR_PAT" | docker login ghcr.io -u sisbios --password-stdin
             docker pull ghcr.io/sisbios/shinebuild-app:${IMAGE_TAG}
+            docker tag ghcr.io/sisbios/shinebuild-app:${IMAGE_TAG} shinebuild:local
 
             cd /root/shinebuild
             {
