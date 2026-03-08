@@ -5,7 +5,7 @@ import Link from 'next/link';
 export const dynamic = 'force-dynamic';
 
 // firebase-admin Query.count() exists at runtime but TS types lag — cast helper
-const cnt = (q: any): Promise<number> => q.count().get().then((s: any) => s.data().count as number);
+const cnt = (q: any): Promise<number> => q.get().then((s: any) => s.size as number);
 
 export default async function AdminDashboardPage() {
   const db = getAdminDb();

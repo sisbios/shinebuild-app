@@ -6,7 +6,7 @@ import { AddStaffForm } from '@/app/(admin)/admin/staff/AddStaffForm';
 import { SuperAdminStaffActions } from '@/app/(admin)/admin/staff/SuperAdminStaffActions';
 
 export const dynamic = 'force-dynamic';
-const cnt = (q: any): Promise<number> => q.count().get().then((s: any) => s.data().count as number);
+const cnt = (q: any): Promise<number> => q.get().then((s: any) => s.size as number);
 
 const ROLE_COLORS: Record<string, string> = {
   staff: 'bg-gray-100 text-gray-700',

@@ -7,7 +7,7 @@ import { SuperAdminStaffActions } from './SuperAdminStaffActions';
 import { getServerSession } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
-const cnt = (q: any): Promise<number> => q.count().get().then((s: any) => s.data().count as number);
+const cnt = (q: any): Promise<number> => q.get().then((s: any) => s.size as number);
 
 export default async function AdminStaffPage() {
   const session = await getServerSession();

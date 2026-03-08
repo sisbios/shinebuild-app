@@ -4,7 +4,7 @@ import Link from 'next/link';
 import type { AgentStatus } from '@shinebuild/shared';
 
 export const dynamic = 'force-dynamic';
-const cnt = (q: any): Promise<number> => q.count().get().then((s: any) => s.data().count as number);
+const cnt = (q: any): Promise<number> => q.get().then((s: any) => s.size as number);
 
 const STATUS_STYLE: Record<string, string> = {
   pending: 'bg-amber-100 text-amber-700',

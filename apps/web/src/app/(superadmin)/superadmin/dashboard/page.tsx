@@ -4,7 +4,7 @@ import Link from 'next/link';
 import type { Timestamp } from 'firebase-admin/firestore';
 
 export const dynamic = 'force-dynamic';
-const cnt = (q: any): Promise<number> => q.count().get().then((s: any) => s.data().count as number);
+const cnt = (q: any): Promise<number> => q.get().then((s: any) => s.size as number);
 
 function dayKey(d: Date) { return d.toISOString().slice(0, 10); }
 
