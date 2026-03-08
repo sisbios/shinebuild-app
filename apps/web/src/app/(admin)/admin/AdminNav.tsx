@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@shinebuild/ui';
 import { LogoutButton } from '@/components/shared/LogoutButton';
+import { SuperAdminNav } from '@/app/(superadmin)/superadmin/SuperAdminNav';
 
 const NAV = [
   {
@@ -34,6 +35,9 @@ const SIDE_EXTRAS = [
 interface Props { role: string; }
 
 export function AdminNav({ role }: Props) {
+  // Superadmin always sees the unified superadmin nav regardless of which section they're in
+  if (role === 'superadmin') return <SuperAdminNav />;
+
   const pathname = usePathname();
 
   return (
