@@ -9,7 +9,7 @@ export async function uploadLeadPhoto(
   leadDraftId: string
 ): Promise<{ path: string } | { error: string }> {
   const session = await getServerSession();
-  if (!session || session.role !== 'agent') return { error: 'Unauthorized' };
+  if (!session || (session.role !== 'agent' && session.role !== 'staff')) return { error: 'Unauthorized' };
 
   try {
     const buffer = Buffer.from(base64Data, 'base64');

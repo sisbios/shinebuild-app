@@ -205,7 +205,6 @@ export function PhotoUpload({ agentId, leadDraftId, onUpload, value, error }: Pr
             ref={inputRef}
             type="file"
             accept="image/*"
-            capture="environment"
             multiple
             className="hidden"
             onChange={(e) => { if (e.target.files) handleFiles(e.target.files); e.target.value = ''; }}
