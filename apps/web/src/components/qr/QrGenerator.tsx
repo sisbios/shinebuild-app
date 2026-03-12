@@ -7,7 +7,13 @@ import { generateQrTokenAction } from '@/app/(agent)/agent/qr/actions';
 
 const QR_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
-export function QrGenerator() {
+type GenerateAction = () => Promise<{ error?: string; qrUrl?: string; tokenId?: string }>;
+
+interface QrGeneratorProps {
+  generateAction?: GenerateAction;
+}
+
+export function QrGenerator({ generateAction = generateQrTokenAction }: QrGeneratorProps) {
   const [qrUrl, setQrUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -33,7 +39,7 @@ export function QrGenerator() {
     setLoading(true);
     setError('');
     try {
-      const result = await generateQrTokenAction();
+      const result = await generateAction();
       if (result.error) { setError(result.error); return; }
       setQrUrl(result.qrUrl!);
       setExpiresAt(Date.now() + QR_TTL_MS);

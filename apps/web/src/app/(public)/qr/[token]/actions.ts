@@ -19,7 +19,7 @@ export async function validateQrToken(rawToken: string): Promise<ValidationResul
     const db = getAdminDb();
     const tokenHash = sha256Hex(rawToken);
 
-    // 1. Find the token document by hash
+    // Find the token document by hash
     const snap = await db
       .collection(COLLECTIONS.QR_TOKENS)
       .where('tokenHash', '==', tokenHash)
@@ -31,32 +31,12 @@ export async function validateQrToken(rawToken: string): Promise<ValidationResul
     const doc = snap.docs[0]!;
     const data = doc.data();
 
-    // Pre-checks (fast path before transaction)
+    // Validate without consuming — consumption happens atomically in submitQrLead
     if (data['usedAt'] != null) return { error: 'used' };
     if ((data['expiresAt'] as Timestamp).toDate() < new Date()) return { error: 'expired' };
 
-    // 2. Atomically consume — tx.get(DocumentReference) IS supported
-    await db.runTransaction(async (tx) => {
-      const freshSnap = await tx.get(doc.ref);
-      const fresh = freshSnap.data()!;
-      if (fresh['usedAt'] != null) throw new Error('already-used');
-      tx.update(doc.ref, { usedAt: FieldValue.serverTimestamp() });
-    });
-
-    // 3. Audit
-    await db.collection(COLLECTIONS.AUDITS).add({
-      actorUid: data['agentId'],
-      role: 'agent',
-      action: 'qr.validated',
-      targetType: 'qrToken',
-      targetId: doc.id,
-      createdAt: FieldValue.serverTimestamp(),
-      metadata: {},
-    });
-
     return { tokenId: doc.id, agentId: data['agentId'] };
   } catch (err: any) {
-    if (err.message === 'already-used') return { error: 'used' };
     console.error('validateQrToken error:', err);
     return { error: 'not-found' };
   }
@@ -80,13 +60,9 @@ interface SubmitQrLeadResult {
 export async function submitQrLead(input: SubmitQrLeadInput): Promise<SubmitQrLeadResult> {
   try {
     const db = getAdminDb();
+    const tokenRef = db.collection(COLLECTIONS.QR_TOKENS).doc(input.tokenId);
 
-    // Get agentId from token doc
-    const tokenSnap = await db.collection(COLLECTIONS.QR_TOKENS).doc(input.tokenId).get();
-    if (!tokenSnap.exists) return { error: 'Invalid token' };
-    const agentId = tokenSnap.data()!['agentId'] as string;
-
-    // Idempotency: check if lead already exists for this tokenId
+    // Idempotency: if a lead was already created for this token, return it
     const existingSnap = await db
       .collection(COLLECTIONS.LEADS)
       .where('qrTokenId', '==', input.tokenId)
@@ -102,76 +78,120 @@ export async function submitQrLead(input: SubmitQrLeadInput): Promise<SubmitQrLe
       };
     }
 
+    // Get agentId from token doc
+    const tokenSnap = await tokenRef.get();
+    if (!tokenSnap.exists) return { error: 'Invalid token' };
+    const agentId = tokenSnap.data()!['agentId'] as string;
+
     // Duplicate detection by phone
-    const normalizedPhone = input.phone;
     const dupSnap = await db
       .collection(COLLECTIONS.LEADS)
-      .where('customer.phoneE164', '==', normalizedPhone)
+      .where('customer.phoneE164', '==', input.phone)
       .limit(1)
       .get();
-
-    const leadRef = db.collection(COLLECTIONS.LEADS).doc();
-    const leadId = leadRef.id;
-    const referenceId = leadId.slice(-6).toUpperCase();
-    const now = FieldValue.serverTimestamp();
-    const nowTs = Timestamp.now();
 
     const isDuplicate = !dupSnap.empty;
     const duplicateOfLeadId = isDuplicate ? dupSnap.docs[0]!.id : undefined;
 
-    await leadRef.set({
-      source: 'qr_self_entry',
-      agentId,
-      qrTokenId: input.tokenId,
-      assignedStaffIds: await getNextStaffRoundRobin().then((s) => s ? [s] : []).catch(() => []),
-      customer: {
-        name: input.name,
-        phoneE164: input.phone,
-        email: input.email ?? null,
-      },
-      requirementNotes: input.requirementNotes,
-      city: input.city,
-      geo: null,
-      photos: [],
-      services: [],
-      agentNotes: '',
-      ...(duplicateOfLeadId ? { duplicateOfLeadId } : {}),
-      status: {
-        current: isDuplicate ? 'duplicate' : 'new',
-        history: [{ status: isDuplicate ? 'duplicate' : 'new', at: nowTs, by: agentId }],
-      },
-      incentive: null,
-      createdAt: now,
-      createdBy: agentId,
+    // Staff round-robin (outside transaction — async call)
+    const assignedStaffIds = await getNextStaffRoundRobin()
+      .then((s) => (s ? [s] : []))
+      .catch(() => []);
+
+    // Pre-create refs before the transaction
+    const leadRef = db.collection(COLLECTIONS.LEADS).doc();
+    const leadId = leadRef.id;
+    const referenceId = leadId.slice(-6).toUpperCase();
+    const agentViewRef = leadRef.collection(COLLECTIONS.AGENT_VIEW).doc('data');
+    const nowTs = Timestamp.now();
+
+    // Atomically consume token + create lead + create agentView
+    await db.runTransaction(async (tx) => {
+      const freshToken = await tx.get(tokenRef);
+      if (!freshToken.exists) throw new Error('token-not-found');
+      if (freshToken.data()!['usedAt'] != null) throw new Error('already-used');
+
+      // Mark token consumed
+      tx.update(tokenRef, { usedAt: FieldValue.serverTimestamp() });
+
+      // Create lead
+      tx.set(leadRef, {
+        source: 'qr_self_entry',
+        agentId,
+        qrTokenId: input.tokenId,
+        assignedStaffIds,
+        customer: {
+          name: input.name,
+          phoneE164: input.phone,
+          email: input.email ?? null,
+        },
+        requirementNotes: input.requirementNotes,
+        city: input.city,
+        geo: null,
+        photos: [],
+        services: [],
+        agentNotes: '',
+        ...(duplicateOfLeadId ? { duplicateOfLeadId } : {}),
+        status: {
+          current: isDuplicate ? 'duplicate' : 'new',
+          history: [{ status: isDuplicate ? 'duplicate' : 'new', at: nowTs, by: agentId }],
+        },
+        incentive: null,
+        createdAt: FieldValue.serverTimestamp(),
+        createdBy: agentId,
+      });
+
+      // Create agentView
+      tx.set(agentViewRef, {
+        agentId,
+        referenceId,
+        maskedName: maskName(input.name),
+        maskedPhone: maskPhone(input.phone),
+        maskedEmail: maskEmail(input.email ?? null),
+        source: 'qr_self_entry',
+        status: isDuplicate ? 'duplicate' : 'new',
+        incentiveAmount: 0,
+        city: input.city,
+        createdAt: FieldValue.serverTimestamp(),
+      });
     });
 
-    // agentView subcollection
-    await leadRef.collection(COLLECTIONS.AGENT_VIEW).doc('data').set({
-      agentId,
-      referenceId,
-      maskedName: maskName(input.name),
-      maskedPhone: maskPhone(input.phone),
-      maskedEmail: maskEmail(input.email ?? null),
-      source: 'qr_self_entry',
-      status: isDuplicate ? 'duplicate' : 'new',
-      incentiveAmount: 0,
-      city: input.city,
-      createdAt: now,
-    });
-
-    // Audit
+    // Audit (outside transaction — best effort)
     await db.collection(COLLECTIONS.AUDITS).add({
       actorUid: agentId,
       role: 'agent',
       action: 'lead.created',
       targetType: 'lead',
       targetId: leadId,
-      createdAt: now,
+      createdAt: FieldValue.serverTimestamp(),
       metadata: { source: 'qr_self_entry', isDuplicate, city: input.city },
     });
 
     return { leadId, referenceId };
   } catch (err: any) {
+    if (err.message === 'already-used') {
+      // Race condition: another submit beat us — return the lead it created
+      try {
+        const db = getAdminDb();
+        const racedLead = await db
+          .collection(COLLECTIONS.LEADS)
+          .where('qrTokenId', '==', input.tokenId)
+          .limit(1)
+          .get();
+        if (!racedLead.empty) {
+          const existing = racedLead.docs[0]!;
+          const avSnap = await existing.ref.collection(COLLECTIONS.AGENT_VIEW).doc('data').get();
+          return {
+            leadId: existing.id,
+            referenceId: avSnap.data()?.['referenceId'] ?? existing.id.slice(-6).toUpperCase(),
+          };
+        }
+      } catch { /* fall through */ }
+      return { error: 'This QR code has already been used. Please ask for a new one.' };
+    }
+    if (err.message === 'token-not-found') {
+      return { error: 'Invalid QR token. Please ask for a new one.' };
+    }
     console.error('submitQrLead error:', err);
     return { error: 'Failed to submit. Please try again.' };
   }
