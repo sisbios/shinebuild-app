@@ -17,7 +17,17 @@ export function OtpInput({ length = 6, value, onChange, disabled, error }: OtpIn
   const digits = value.split('').concat(Array(length).fill('')).slice(0, length);
 
   const handleChange = (index: number, char: string) => {
-    const digit = char.replace(/\D/g, '').slice(-1);
+    const cleaned = char.replace(/\D/g, '');
+    // Multi-digit input: autofill (autocomplete="one-time-code") or paste into a box
+    if (cleaned.length > 1) {
+      const newDigits = [...digits];
+      const chars = cleaned.slice(0, length - index).split('');
+      chars.forEach((c, j) => { newDigits[index + j] = c; });
+      onChange(newDigits.join(''));
+      inputRefs.current[Math.min(index + chars.length, length - 1)]?.focus();
+      return;
+    }
+    const digit = cleaned.slice(-1);
     const newDigits = [...digits];
     newDigits[index] = digit;
     onChange(newDigits.join(''));
@@ -25,6 +35,11 @@ export function OtpInput({ length = 6, value, onChange, disabled, error }: OtpIn
       inputRefs.current[index + 1]?.focus();
     }
   };
+
+  // Auto-focus first box on mount so the OS keyboard suggestion appears immediately
+  React.useEffect(() => {
+    inputRefs.current[0]?.focus();
+  }, []);
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Backspace' && !digits[index] && index > 0) {
@@ -52,7 +67,8 @@ export function OtpInput({ length = 6, value, onChange, disabled, error }: OtpIn
             type="text"
             inputMode="numeric"
             pattern="[0-9]*"
-            maxLength={1}
+            autoComplete={i === 0 ? 'one-time-code' : 'off'}
+            maxLength={i === 0 ? 6 : 1}
             value={digit}
             disabled={disabled}
             onChange={(e) => handleChange(i, e.target.value)}
