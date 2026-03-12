@@ -44,6 +44,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
         <meta name="format-detection" content="telephone=no" />
+        {/* Capture beforeinstallprompt ASAP — before React hydrates — so it is
+            never missed due to the event firing before useEffect attaches */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          window.addEventListener('beforeinstallprompt',function(e){
+            e.preventDefault();
+            window.__pwaPrompt=e;
+          });
+        `}} />
       </head>
       <body className="bg-mesh font-sans antialiased min-h-svh overscroll-none">
         <ToastProvider>

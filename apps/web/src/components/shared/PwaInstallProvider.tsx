@@ -49,6 +49,14 @@ export function PwaInstallProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Pick up the prompt captured by the early <script> in <head> before
+    // React hydrated (the most common reason hasNativePrompt was false on Android)
+    if ((window as any).__pwaPrompt) {
+      setDeferredPrompt((window as any).__pwaPrompt as BeforeInstallPromptEvent);
+      delete (window as any).__pwaPrompt;
+    }
+
+    // Also listen for future fires (e.g. after the user dismisses and retries)
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
