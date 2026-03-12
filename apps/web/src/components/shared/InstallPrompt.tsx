@@ -20,15 +20,17 @@ function setDismissed() {
 }
 
 export function InstallPrompt() {
-  const { canInstall, isIos, promptInstall } = usePwaInstall();
+  const { hasNativePrompt, isIos, promptInstall } = usePwaInstall();
   const [visible, setVisible] = useState(false);
 
+  // Only auto-popup when there is a native prompt or on iOS — not for
+  // the Android manual-instructions case (the header button handles that)
   useEffect(() => {
-    if (!canInstall) return;
+    if (!hasNativePrompt && !isIos) return;
     if (isDismissed()) return;
     const t = setTimeout(() => setVisible(true), isIos ? 4000 : 3500);
     return () => clearTimeout(t);
-  }, [canInstall, isIos]);
+  }, [hasNativePrompt, isIos]);
 
   const dismiss = () => {
     setDismissed();

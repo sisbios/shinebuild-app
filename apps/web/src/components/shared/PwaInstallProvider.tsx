@@ -8,8 +8,10 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 interface PwaInstallContextValue {
-  /** true when the browser can install (Android prompt available) or iOS instructions apply */
+  /** true whenever the app is NOT running as a standalone PWA */
   canInstall: boolean;
+  /** true if the browser has a native install prompt ready (Android/Chrome) */
+  hasNativePrompt: boolean;
   isIos: boolean;
   isInstalled: boolean;
   promptInstall: () => Promise<void>;
@@ -17,6 +19,7 @@ interface PwaInstallContextValue {
 
 const PwaInstallContext = createContext<PwaInstallContextValue>({
   canInstall: false,
+  hasNativePrompt: false,
   isIos: false,
   isInstalled: false,
   promptInstall: async () => {},
@@ -62,10 +65,14 @@ export function PwaInstallProvider({ children }: { children: ReactNode }) {
     if (outcome === 'accepted') setIsInstalled(true);
   };
 
-  const canInstall = !isInstalled && (!!deferredPrompt || isIos);
+  // Always show the install button when not running as a standalone PWA.
+  // Even without a native prompt (Android cooldown after reinstall) we show
+  // manual instructions so the user can still install.
+  const canInstall = !isInstalled;
+  const hasNativePrompt = !!deferredPrompt;
 
   return (
-    <PwaInstallContext.Provider value={{ canInstall, isIos, isInstalled, promptInstall }}>
+    <PwaInstallContext.Provider value={{ canInstall, hasNativePrompt, isIos, isInstalled, promptInstall }}>
       {children}
     </PwaInstallContext.Provider>
   );
