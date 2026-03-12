@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@shinebuild/ui';
 import { LogoutButton } from '@/components/shared/LogoutButton';
+import { PwaInstallButton } from '@/components/shared/PwaInstallButton';
 import { SuperAdminNav } from '@/app/(superadmin)/superadmin/SuperAdminNav';
 
 const NAV = [
@@ -77,8 +78,9 @@ export function AdminNav({ role }: Props) {
           <img src="/icons/logo-96.png" alt="Shine Build Hub" className="h-7 w-7 rounded-lg object-cover flex-shrink-0" />
           <span className="text-sm font-bold text-gray-900">Shine Build Hub</span>
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-1.5">
           <span className="text-xs font-medium text-gray-400 capitalize bg-red-50 px-2 py-1 rounded-lg">{role}</span>
+          <PwaInstallButton />
           <LogoutButton />
         </div>
       </header>

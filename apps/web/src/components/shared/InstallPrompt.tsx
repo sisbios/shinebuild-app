@@ -1,11 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt(): Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
+import { usePwaInstall } from './PwaInstallProvider';
 
 const DISMISS_KEY = 'pwa-dismissed-until';
 const DISMISS_DAYS = 7;
@@ -24,32 +20,15 @@ function setDismissed() {
 }
 
 export function InstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const { canInstall, isIos, promptInstall } = usePwaInstall();
   const [visible, setVisible] = useState(false);
-  const [isIos, setIsIos] = useState(false);
 
   useEffect(() => {
-    const isStandalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true;
-    if (isStandalone) return;
+    if (!canInstall) return;
     if (isDismissed()) return;
-
-    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !(window as any).MSStream;
-    if (ios) {
-      setIsIos(true);
-      const t = setTimeout(() => setVisible(true), 4000);
-      return () => clearTimeout(t);
-    }
-
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setTimeout(() => setVisible(true), 3500);
-    };
-    window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, []);
+    const t = setTimeout(() => setVisible(true), isIos ? 4000 : 3500);
+    return () => clearTimeout(t);
+  }, [canInstall, isIos]);
 
   const dismiss = () => {
     setDismissed();
@@ -57,10 +36,7 @@ export function InstallPrompt() {
   };
 
   const install = async () => {
-    if (!deferredPrompt) return;
-    await deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    setDeferredPrompt(null);
+    await promptInstall();
     setVisible(false);
   };
 

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LogoutButton } from '@/components/shared/LogoutButton';
+import { PwaInstallButton } from '@/components/shared/PwaInstallButton';
 
 function cn(...c: (string | false | undefined)[]) {
   return c.filter(Boolean).join(' ');
@@ -93,8 +94,9 @@ export function StaffNav({ pendingCount = 0 }: { pendingCount?: number }) {
           })}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <span className="hidden sm:inline-flex text-xs font-medium text-gray-400 bg-gray-100 px-2.5 py-1 rounded-full">staff</span>
+          <PwaInstallButton />
           <LogoutButton />
         </div>
       </header>

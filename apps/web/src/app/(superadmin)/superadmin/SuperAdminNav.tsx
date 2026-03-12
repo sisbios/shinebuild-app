@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { LogoutButton } from '@/components/shared/LogoutButton';
+import { PwaInstallButton } from '@/components/shared/PwaInstallButton';
 
 function cn(...classes: (string | false | undefined)[]) {
   return classes.filter(Boolean).join(' ');
@@ -125,8 +126,9 @@ export function SuperAdminNav() {
           <img src="/icons/logo-96.png" alt="Shine Build Hub" className="h-7 w-7 rounded-lg object-cover flex-shrink-0" />
           <span className="text-sm font-bold text-gray-900">Super Admin</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <span className="text-xs text-gray-400 bg-red-50 px-2 py-1 rounded-lg font-medium">superadmin</span>
+          <PwaInstallButton />
           <LogoutButton />
         </div>
       </header>

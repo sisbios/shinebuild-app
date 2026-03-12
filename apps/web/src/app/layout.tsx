@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { ToastProvider } from '@shinebuild/ui';
+import { PwaInstallProvider } from '@/components/shared/PwaInstallProvider';
 import { InstallPrompt } from '@/components/shared/InstallPrompt';
 import { SwRegister } from '@/components/shared/SwRegister';
 
@@ -46,9 +47,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="bg-mesh font-sans antialiased min-h-svh overscroll-none">
         <ToastProvider>
-          {children}
-          <InstallPrompt />
-          <SwRegister />
+          <PwaInstallProvider>
+            {children}
+            <InstallPrompt />
+            <SwRegister />
+          </PwaInstallProvider>
         </ToastProvider>
       </body>
     </html>
