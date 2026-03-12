@@ -109,6 +109,7 @@ export function PhoneOtpForm({ onSuccess, submitLabel = 'Verify & Continue', ini
           <PhoneInput
             value={phone}
             onChange={setPhone}
+            onKeyDown={(e) => { if (e.key === 'Enter' && phone.length >= 13 && !loading) sendOtp(); }}
             error={error}
             required
           />

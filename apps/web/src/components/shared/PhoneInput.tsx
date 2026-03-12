@@ -8,6 +8,7 @@ interface Props {
   required?: boolean;
   autoComplete?: string;
   className?: string;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }
 
 /**
@@ -23,6 +24,7 @@ export function PhoneInput({
   required,
   autoComplete = 'tel',
   className = '',
+  onKeyDown,
 }: Props) {
   // Strip +91 prefix so we only show the local digits in the box
   const digits = value.startsWith('+91') ? value.slice(3) : value.replace(/^\+/, '');
@@ -50,6 +52,7 @@ export function PhoneInput({
           autoComplete={autoComplete}
           value={digits}
           onChange={handleChange}
+          onKeyDown={onKeyDown}
           placeholder="98765 43210"
           maxLength={10}
           required={required}
