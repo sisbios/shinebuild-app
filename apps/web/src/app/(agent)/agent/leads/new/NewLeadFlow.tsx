@@ -1,27 +1,73 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
 import { GeoCapture, type GeoData } from '@/components/shared/GeoCapture';
 import { PhotoUpload } from '@/components/shared/PhotoUpload';
+import { toE164 } from '@shinebuild/shared';
 import {
   generateQrForNewLead,
   checkLeadFromToken,
   completeAgentLeadDetails,
+  submitAgentDirectLead,
 } from './actions';
 
 interface Props {
   agentId: string;
   serviceItems: Array<{ id: string; name: string }>;
+  directEntryEnabled: boolean;
 }
 
 const QR_TTL_MS = 15 * 60 * 1000;
 
-export function NewLeadFlow({ agentId, serviceItems }: Props) {
+export function NewLeadFlow({ agentId, serviceItems, directEntryEnabled }: Props) {
+  const router = useRouter();
+  const [mode, setMode] = useState<'qr' | 'direct'>('qr');
+
+  return (
+    <div className="space-y-5">
+      {directEntryEnabled && (
+        <div className="glass-card rounded-2xl p-1.5 flex gap-1">
+          <button
+            type="button"
+            onClick={() => setMode('qr')}
+            className={`flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
+              mode === 'qr'
+                ? 'brand-gradient text-white shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            QR Scan
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('direct')}
+            className={`flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
+              mode === 'direct'
+                ? 'brand-gradient text-white shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Direct Entry
+          </button>
+        </div>
+      )}
+
+      {mode === 'direct' && directEntryEnabled ? (
+        <DirectEntryForm agentId={agentId} serviceItems={serviceItems} onSubmitted={(id) => router.push(`/agent/leads/${id}`)} />
+      ) : (
+        <QrFlow agentId={agentId} serviceItems={serviceItems} />
+      )}
+    </div>
+  );
+}
+
+/* ───────────────────────── QR flow (unchanged behaviour) ─────────────────────── */
+
+function QrFlow({ agentId, serviceItems }: { agentId: string; serviceItems: Array<{ id: string; name: string }> }) {
   const router = useRouter();
 
-  // Step 1 – QR
   const [step, setStep] = useState<'qr' | 'details'>('qr');
   const [qrUrl, setQrUrl] = useState('');
   const [tokenId, setTokenId] = useState('');
@@ -31,7 +77,6 @@ export function NewLeadFlow({ agentId, serviceItems }: Props) {
   const [qrError, setQrError] = useState('');
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Step 2 – Agent details
   const [leadId, setLeadId] = useState('');
   const [geo, setGeo] = useState<GeoData | undefined>();
   const [photos, setPhotos] = useState<string[]>([]);
@@ -40,10 +85,8 @@ export function NewLeadFlow({ agentId, serviceItems }: Props) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
-  // Auto-generate on mount
   useEffect(() => { generateQr(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Countdown timer
   useEffect(() => {
     if (!expiresAt) return;
     const iv = setInterval(() => {
@@ -54,7 +97,6 @@ export function NewLeadFlow({ agentId, serviceItems }: Props) {
     return () => clearInterval(iv);
   }, [expiresAt]);
 
-  // Poll for customer submission
   useEffect(() => {
     if (!tokenId || step !== 'qr') return;
     pollRef.current = setInterval(async () => {
@@ -105,27 +147,21 @@ export function NewLeadFlow({ agentId, serviceItems }: Props) {
   const minutes = Math.floor(timeLeft / 60000);
   const seconds = Math.floor((timeLeft % 60000) / 1000);
 
-  /* ── Step 1: QR ────────────────────────────────────────── */
   if (step === 'qr') {
     return (
       <div className="space-y-5">
         {qrUrl ? (
           <div className="space-y-4">
-            {/* QR card */}
             <div className="glass-card rounded-2xl p-5 flex flex-col items-center gap-4">
               <div className="rounded-2xl bg-white p-4 shadow-sm border border-gray-100">
                 <QRCodeSVG value={qrUrl} size={210} level="M" includeMargin={false} />
               </div>
-
-              {/* Countdown */}
               <div className="w-full rounded-xl bg-amber-50 border border-amber-200 px-4 py-2.5 text-center">
                 <p className="text-sm font-semibold text-amber-800">
                   Expires in {minutes}:{seconds.toString().padStart(2, '0')}
                 </p>
                 <p className="text-xs text-amber-600 mt-0.5">Single-use · Show to customer to scan</p>
               </div>
-
-              {/* Waiting indicator */}
               <div className="w-full rounded-xl bg-blue-50 border border-blue-100 px-4 py-3 flex items-center gap-3">
                 <div className="h-4 w-4 rounded-full border-2 border-blue-500 border-t-transparent animate-spin flex-shrink-0" />
                 <div>
@@ -134,8 +170,6 @@ export function NewLeadFlow({ agentId, serviceItems }: Props) {
                 </div>
               </div>
             </div>
-
-            {/* Instructions */}
             <div className="glass-card rounded-2xl p-4 space-y-2">
               <p className="text-sm font-semibold text-gray-700">How it works</p>
               <ol className="text-xs text-gray-500 space-y-1.5 list-decimal list-inside">
@@ -145,7 +179,6 @@ export function NewLeadFlow({ agentId, serviceItems }: Props) {
                 <li>You'll be taken to the next step automatically</li>
               </ol>
             </div>
-
             <button
               onClick={generateQr}
               disabled={qrLoading}
@@ -181,10 +214,8 @@ export function NewLeadFlow({ agentId, serviceItems }: Props) {
     );
   }
 
-  /* ── Step 2: Agent details ─────────────────────────────── */
   return (
     <div className="space-y-5">
-      {/* Customer filled notice */}
       <div className="rounded-xl bg-green-50 border border-green-200 px-4 py-3 flex items-center gap-3">
         <svg className="h-5 w-5 text-green-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -195,55 +226,10 @@ export function NewLeadFlow({ agentId, serviceItems }: Props) {
         </div>
       </div>
 
-      {/* Services checklist */}
-      {serviceItems.length > 0 && (
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">
-            Services Required <span className="text-red-500">*</span>
-          </label>
-          <div className="glass-card rounded-2xl p-4 grid grid-cols-2 gap-2">
-            {serviceItems.map((item) => {
-              const checked = services.includes(item.name);
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => toggleService(item.name)}
-                  className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm transition-colors ${
-                    checked
-                      ? 'bg-red-50 border border-red-300 text-red-800'
-                      : 'bg-white border border-gray-200 text-gray-700'
-                  }`}
-                >
-                  <div className={`flex-shrink-0 h-4 w-4 rounded border ${checked ? 'bg-red-600 border-red-600' : 'border-gray-300'} flex items-center justify-center`}>
-                    {checked && (
-                      <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                  </div>
-                  <span className="leading-tight">{item.name}</span>
-                </button>
-              );
-            })}
-          </div>
-          {errors['services'] && <p className="text-xs text-red-600">{errors['services']}</p>}
-        </div>
-      )}
-
-      {/* Geo */}
+      <ServicesPicker items={serviceItems} value={services} onToggle={toggleService} error={errors['services']} />
       <GeoCapture onCapture={setGeo} value={geo} error={errors['geo']} />
+      <PhotoUpload agentId={agentId} leadDraftId={leadId} onUpload={setPhotos} value={photos} error={errors['photos']} />
 
-      {/* Photos */}
-      <PhotoUpload
-        agentId={agentId}
-        leadDraftId={leadId}
-        onUpload={setPhotos}
-        value={photos}
-        error={errors['photos']}
-      />
-
-      {/* Agent notes */}
       <div className="space-y-1">
         <label className="text-sm font-medium text-gray-700">Site Observations</label>
         <textarea
@@ -263,16 +249,274 @@ export function NewLeadFlow({ agentId, serviceItems }: Props) {
         disabled={submitting}
         className="flex w-full items-center justify-center gap-2 rounded-2xl brand-gradient px-4 py-3.5 text-base font-semibold text-white shadow-md disabled:opacity-60 transition-opacity"
       >
-        {submitting ? (
-          <>
-            <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
-            Submitting…
-          </>
-        ) : 'Submit Lead'}
+        {submitting ? <Spinner /> : 'Submit Lead'}
       </button>
     </div>
+  );
+}
+
+/* ───────────────────────── Direct entry form ──────────────────────────────── */
+
+function DirectEntryForm({
+  agentId,
+  serviceItems,
+  onSubmitted,
+}: {
+  agentId: string;
+  serviceItems: Array<{ id: string; name: string }>;
+  onSubmitted: (leadId: string) => void;
+}) {
+  // Stable draft id for photo storage paths until the lead doc is created
+  const draftId = useMemo(
+    () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `draft_${Date.now()}_${Math.random().toString(36).slice(2)}`),
+    []
+  );
+
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [city, setCity] = useState('');
+  const [requirementNotes, setRequirementNotes] = useState('');
+  const [services, setServices] = useState<string[]>([]);
+  const [geo, setGeo] = useState<GeoData | undefined>();
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [agentNotes, setAgentNotes] = useState('');
+  const [consent, setConsent] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
+
+  const toggleService = (name: string) =>
+    setServices((prev) => prev.includes(name) ? prev.filter((s) => s !== name) : [...prev, name]);
+
+  const handleSubmit = async () => {
+    const errs: Record<string, string> = {};
+    if (customerName.trim().length < 2) errs['customerName'] = 'Customer name is required';
+
+    const phoneE164 = toE164(customerPhone, 'IN');
+    if (!phoneE164 || !/^\+[1-9]\d{7,14}$/.test(phoneE164)) errs['customerPhone'] = 'Valid 10-digit phone number is required';
+
+    if (city.trim().length < 2) errs['city'] = 'City is required';
+    if (requirementNotes.trim().length < 10) errs['requirementNotes'] = 'Describe the requirement (min 10 characters)';
+    if (!geo) errs['geo'] = 'Location capture is required';
+    if (photos.length === 0) errs['photos'] = 'At least 1 photo is required';
+    if (services.length === 0 && serviceItems.length > 0) errs['services'] = 'Select at least one service';
+    if (!consent) errs['consent'] = 'Customer consent is required before submitting';
+    if (customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) errs['customerEmail'] = 'Invalid email';
+
+    setErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+
+    setSubmitting(true);
+    try {
+      const res = await submitAgentDirectLead({
+        customerName: customerName.trim(),
+        customerPhone: phoneE164!,
+        customerEmail: customerEmail.trim() || '',
+        city: city.trim(),
+        requirementNotes: requirementNotes.trim(),
+        geo: geo!,
+        photoStoragePaths: photos,
+        services,
+        agentNotes: agentNotes.trim(),
+        customerConsent: true,
+      });
+      if (res.error) { setErrors({ submit: res.error }); return; }
+      onSubmitted(res.leadId!);
+    } catch {
+      setErrors({ submit: 'Failed to submit. Please try again.' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-xl bg-blue-50 border border-blue-200 px-4 py-3">
+        <p className="text-sm font-semibold text-blue-800">Direct entry mode</p>
+        <p className="text-xs text-blue-600 mt-0.5">
+          Use this only when the customer is unable to scan a QR code. Confirm details verbally before submitting.
+        </p>
+      </div>
+
+      <div className="glass-card rounded-2xl p-4 space-y-3">
+        <p className="text-sm font-semibold text-gray-700">Customer details</p>
+
+        <Field label="Customer Name" required error={errors['customerName']}>
+          <input
+            type="text"
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
+            placeholder="Full name"
+            className="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:border-red-700 focus:outline-none focus:ring-1 focus:ring-red-700"
+          />
+        </Field>
+
+        <Field label="Customer Phone" required error={errors['customerPhone']} hint="10-digit Indian mobile">
+          <input
+            type="tel"
+            inputMode="numeric"
+            value={customerPhone}
+            onChange={(e) => setCustomerPhone(e.target.value)}
+            placeholder="98765 43210"
+            className="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:border-red-700 focus:outline-none focus:ring-1 focus:ring-red-700"
+          />
+        </Field>
+
+        <Field label="Customer Email" error={errors['customerEmail']} hint="Optional">
+          <input
+            type="email"
+            value={customerEmail}
+            onChange={(e) => setCustomerEmail(e.target.value)}
+            placeholder="customer@example.com"
+            className="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:border-red-700 focus:outline-none focus:ring-1 focus:ring-red-700"
+          />
+        </Field>
+
+        <Field label="City" required error={errors['city']}>
+          <input
+            type="text"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            placeholder="e.g. Kochi"
+            className="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:border-red-700 focus:outline-none focus:ring-1 focus:ring-red-700"
+          />
+        </Field>
+
+        <Field label="Requirement" required error={errors['requirementNotes']} hint="What does the customer need?">
+          <textarea
+            value={requirementNotes}
+            onChange={(e) => setRequirementNotes(e.target.value)}
+            placeholder="e.g. 3BHK painting work, exterior + interior, 1500 sqft"
+            className="flex min-h-[90px] w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:border-red-700 focus:outline-none focus:ring-1 focus:ring-red-700"
+          />
+        </Field>
+      </div>
+
+      <ServicesPicker items={serviceItems} value={services} onToggle={toggleService} error={errors['services']} />
+      <GeoCapture onCapture={setGeo} value={geo} error={errors['geo']} />
+      <PhotoUpload agentId={agentId} leadDraftId={draftId} onUpload={setPhotos} value={photos} error={errors['photos']} />
+
+      <div className="space-y-1">
+        <label className="text-sm font-medium text-gray-700">Site Observations</label>
+        <textarea
+          className="flex min-h-[90px] w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:border-red-700 focus:outline-none focus:ring-1 focus:ring-red-700"
+          placeholder="Additional notes about the site, property condition, urgency, etc."
+          value={agentNotes}
+          onChange={(e) => setAgentNotes(e.target.value)}
+        />
+      </div>
+
+      <label className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white px-3 py-2.5">
+        <input
+          type="checkbox"
+          checked={consent}
+          onChange={(e) => setConsent(e.target.checked)}
+          className="mt-0.5 h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-700"
+        />
+        <span className="text-xs text-gray-700">
+          I confirm the customer has given verbal consent to share their contact details with our team.
+        </span>
+      </label>
+      {errors['consent'] && <p className="text-xs text-red-600">{errors['consent']}</p>}
+
+      {errors['submit'] && (
+        <p className="rounded-xl bg-red-50 border border-red-200 px-3 py-2.5 text-sm text-red-700">{errors['submit']}</p>
+      )}
+
+      <button
+        onClick={handleSubmit}
+        disabled={submitting}
+        className="flex w-full items-center justify-center gap-2 rounded-2xl brand-gradient px-4 py-3.5 text-base font-semibold text-white shadow-md disabled:opacity-60 transition-opacity"
+      >
+        {submitting ? <Spinner /> : 'Submit Lead'}
+      </button>
+    </div>
+  );
+}
+
+/* ───────────────────────── Shared bits ────────────────────────────────────── */
+
+function ServicesPicker({
+  items,
+  value,
+  onToggle,
+  error,
+}: {
+  items: Array<{ id: string; name: string }>;
+  value: string[];
+  onToggle: (name: string) => void;
+  error?: string;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div className="space-y-2">
+      <label className="text-sm font-medium text-gray-700">
+        Services Required <span className="text-red-500">*</span>
+      </label>
+      <div className="glass-card rounded-2xl p-4 grid grid-cols-2 gap-2">
+        {items.map((item) => {
+          const checked = value.includes(item.name);
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onToggle(item.name)}
+              className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm transition-colors ${
+                checked
+                  ? 'bg-red-50 border border-red-300 text-red-800'
+                  : 'bg-white border border-gray-200 text-gray-700'
+              }`}
+            >
+              <div className={`flex-shrink-0 h-4 w-4 rounded border ${checked ? 'bg-red-600 border-red-600' : 'border-gray-300'} flex items-center justify-center`}>
+                {checked && (
+                  <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </div>
+              <span className="leading-tight">{item.name}</span>
+            </button>
+          );
+        })}
+      </div>
+      {error && <p className="text-xs text-red-600">{error}</p>}
+    </div>
+  );
+}
+
+function Field({
+  label,
+  required,
+  error,
+  hint,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  error?: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="text-sm font-medium text-gray-700">
+        {label} {required && <span className="text-red-500">*</span>}
+        {hint && <span className="ml-2 text-xs font-normal text-gray-400">{hint}</span>}
+      </label>
+      {children}
+      {error && <p className="text-xs text-red-600">{error}</p>}
+    </div>
+  );
+}
+
+function Spinner() {
+  return (
+    <>
+      <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+      </svg>
+      Submitting…
+    </>
   );
 }

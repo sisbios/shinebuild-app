@@ -17,6 +17,7 @@ const badgeVariants = cva(
         pending: 'bg-amber-100 text-amber-700',
         approved: 'bg-green-100 text-green-700',
         deactivated: 'bg-gray-100 text-gray-500',
+        deleted: 'bg-rose-100 text-rose-700 line-through',
       },
     },
     defaultVariants: { variant: 'default' },

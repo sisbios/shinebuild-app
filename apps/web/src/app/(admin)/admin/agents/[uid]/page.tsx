@@ -1,10 +1,11 @@
-import { getServerSession } from '@/lib/session';
-import { getAdminDb, getAdminAuth } from '@/lib/firebase-server';
+import { requireRole } from '@/lib/session';
+import { getAdminDb } from '@/lib/firebase-server';
 import { COLLECTIONS } from '@shinebuild/firebase';
 import { Badge } from '@shinebuild/ui';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { AgentActionButtons } from './AgentActionButtons';
+import { DirectEntryToggle } from './DirectEntryToggle';
 import type { AgentStatus } from '@shinebuild/shared';
 
 export const dynamic = 'force-dynamic';
@@ -15,6 +16,7 @@ interface Props {
 
 export default async function AdminAgentDetailPage({ params }: Props) {
   const { uid } = await params;
+  const session = await requireRole('admin', 'superadmin');
   const db = getAdminDb();
 
   const snap = await db.collection(COLLECTIONS.USERS).doc(uid).get();
@@ -25,13 +27,13 @@ export default async function AdminAgentDetailPage({ params }: Props) {
     uid,
     name: d['name'],
     phone: d['phone'],
-    status: d['status'] as AgentStatus,
+    status: (d['status'] ?? 'pending') as AgentStatus,
     city: d['metadata']?.['city'],
     district: d['metadata']?.['district'],
+    directEntryEnabled: d['directEntryEnabled'] === true,
     createdAt: d['createdAt']?.toDate() ?? new Date(),
   };
 
-  // Lead count for this agent
   let leadCount = 0;
   try {
     const countSnap = await db
@@ -40,6 +42,8 @@ export default async function AdminAgentDetailPage({ params }: Props) {
       .get();
     leadCount = countSnap.size;
   } catch {}
+
+  const isSuperAdmin = session.role === 'superadmin';
 
   return (
     <div className="space-y-5">
@@ -56,9 +60,26 @@ export default async function AdminAgentDetailPage({ params }: Props) {
         <Row label="District">{agent.district ?? '—'}</Row>
         <Row label="Joined">{agent.createdAt.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</Row>
         <Row label="Leads Submitted">{leadCount}</Row>
+        <Row label="Direct Entry">
+          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
+            agent.directEntryEnabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+          }`}>
+            {agent.directEntryEnabled ? 'Enabled' : 'Disabled'}
+          </span>
+        </Row>
       </div>
 
-      <AgentActionButtons uid={uid} currentStatus={agent.status} />
+      <DirectEntryToggle
+        uid={uid}
+        initialEnabled={agent.directEntryEnabled}
+        canEdit={isSuperAdmin}
+      />
+
+      <AgentActionButtons
+        uid={uid}
+        currentStatus={agent.status}
+        leadCount={leadCount}
+      />
     </div>
   );
 }

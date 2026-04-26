@@ -1,7 +1,9 @@
+import { requireRole } from '@/lib/session';
 import { getAdminDb } from '@/lib/firebase-server';
 import { COLLECTIONS } from '@shinebuild/firebase';
 import Link from 'next/link';
 import type { AgentStatus } from '@shinebuild/shared';
+import { AgentRowToggle } from './AgentRowToggle';
 
 export const dynamic = 'force-dynamic';
 const cnt = (q: any): Promise<number> => q.get().then((s: any) => s.size as number);
@@ -11,35 +13,56 @@ const STATUS_STYLE: Record<string, string> = {
   approved: 'bg-green-100 text-green-700',
   rejected: 'bg-red-100 text-red-700',
   deactivated: 'bg-gray-100 text-gray-500',
+  deleted: 'bg-rose-100 text-rose-700 line-through',
 };
 
 interface Props { searchParams: Promise<{ status?: string; sort?: string }> }
 
+interface AgentRow {
+  uid: string;
+  name: string;
+  phone: string;
+  status: AgentStatus;
+  city?: string;
+  createdAt: Date;
+  leadCount: number;
+  directEntryEnabled: boolean;
+}
+
 export default async function AdminAgentsPage({ searchParams }: Props) {
   const sp = await searchParams;
+  const session = await requireRole('admin', 'superadmin');
+  const isSuperAdmin = session.role === 'superadmin';
   const db = getAdminDb();
-  let agents: Array<{ uid: string; name: string; phone: string; status: AgentStatus; city?: string; createdAt: Date; leadCount: number }> = [];
+  let agents: AgentRow[] = [];
 
   try {
     let q: any = db.collection(COLLECTIONS.USERS).where('role', '==', 'agent');
     if (sp.status) q = q.where('status', '==', sp.status);
     const snap = await q.limit(200).get();
-    const raw = snap.docs.map((doc: any) => {
+    const raw: AgentRow[] = snap.docs.map((doc: any) => {
       const d = doc.data();
-      return { uid: doc.id, name: d['name'] ?? '—', phone: d['phone'] ?? '—',
-        status: (d['status'] ?? 'pending') as AgentStatus, city: d['metadata']?.['city'],
-        createdAt: d['createdAt']?.toDate() ?? new Date(), leadCount: 0 };
+      return {
+        uid: doc.id,
+        name: d['name'] ?? '—',
+        phone: d['phone'] ?? '—',
+        status: (d['status'] ?? 'pending') as AgentStatus,
+        city: d['metadata']?.['city'],
+        createdAt: d['createdAt']?.toDate() ?? new Date(),
+        leadCount: 0,
+        directEntryEnabled: d['directEntryEnabled'] === true,
+      };
     });
     const counts = await Promise.all(
-      raw.map((a: any) => cnt(db.collection(COLLECTIONS.LEADS).where('agentId', '==', a.uid)).catch(() => 0))
+      raw.map((a) => cnt(db.collection(COLLECTIONS.LEADS).where('agentId', '==', a.uid)).catch(() => 0))
     );
-    agents = raw.map((a: any, i: number) => ({ ...a, leadCount: counts[i] }));
+    agents = raw.map((a, i) => ({ ...a, leadCount: counts[i]! }));
     if (sp.sort === 'leads') agents.sort((a, b) => b.leadCount - a.leadCount);
     else if (sp.sort === 'name') agents.sort((a, b) => a.name.localeCompare(b.name));
     else agents.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   } catch (err) { console.error('AdminAgentsPage error:', err); }
 
-  const cnts = { pending: 0, approved: 0, rejected: 0, deactivated: 0 };
+  const cnts = { pending: 0, approved: 0, rejected: 0, deactivated: 0, deleted: 0 };
   agents.forEach((a) => { if (a.status in cnts) cnts[a.status as keyof typeof cnts]++; });
 
   return (
@@ -51,7 +74,7 @@ export default async function AdminAgentsPage({ searchParams }: Props) {
 
       {/* Filter pills */}
       <div className="flex flex-wrap gap-2">
-        {(['', 'pending', 'approved', 'rejected', 'deactivated'] as const).map((s) => (
+        {(['', 'pending', 'approved', 'rejected', 'deactivated', 'deleted'] as const).map((s) => (
           <Link key={s} href={s ? `/admin/agents?status=${s}` : '/admin/agents'}
             className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
               sp.status === s || (!sp.status && s === '') ? 'brand-gradient text-white shadow-sm' : 'glass text-gray-600 hover:text-gray-900'
@@ -68,6 +91,12 @@ export default async function AdminAgentsPage({ searchParams }: Props) {
           ))}
         </span>
       </div>
+
+      {!isSuperAdmin && (
+        <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          Direct-entry toggle is read-only for admins. Only super admin can change permission.
+        </p>
+      )}
 
       {/* Mobile cards */}
       <div className="space-y-3 sm:hidden">
@@ -89,6 +118,22 @@ export default async function AdminAgentsPage({ searchParams }: Props) {
                 {agent.status}
               </span>
             </div>
+
+            {/* Direct entry toggle row */}
+            <div className="mt-3 flex items-center justify-between rounded-xl bg-white/60 px-3 py-2 border border-white/50">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-gray-700">Direct lead entry</p>
+                <p className="text-[10px] text-gray-500">Allow lead entry without QR scan</p>
+              </div>
+              <AgentRowToggle
+                uid={agent.uid}
+                initialEnabled={agent.directEntryEnabled}
+                canEdit={isSuperAdmin}
+                size="sm"
+                status={agent.status}
+              />
+            </div>
+
             <div className="mt-3 flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs text-gray-500 flex-wrap">
                 {agent.city && <span className="bg-gray-100 px-2 py-0.5 rounded-full">{agent.city}</span>}
@@ -115,6 +160,9 @@ export default async function AdminAgentsPage({ searchParams }: Props) {
                 <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 hidden md:table-cell">City</th>
                 <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Status</th>
                 <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Leads</th>
+                <th className="px-5 py-3.5 text-center text-xs font-semibold uppercase tracking-wide text-gray-400" title="Direct lead entry permission (no QR)">
+                  Direct&nbsp;Entry
+                </th>
                 <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 hidden lg:table-cell">Joined</th>
                 <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Actions</th>
               </tr>
@@ -138,6 +186,15 @@ export default async function AdminAgentsPage({ searchParams }: Props) {
                     </span>
                   </td>
                   <td className="px-5 py-3.5 text-gray-700 font-medium">{agent.leadCount}</td>
+                  <td className="px-5 py-3.5 text-center">
+                    <AgentRowToggle
+                      uid={agent.uid}
+                      initialEnabled={agent.directEntryEnabled}
+                      canEdit={isSuperAdmin}
+                      size="sm"
+                      status={agent.status}
+                    />
+                  </td>
                   <td className="px-5 py-3.5 text-xs text-gray-400 hidden lg:table-cell">
                     {agent.createdAt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </td>
@@ -150,7 +207,7 @@ export default async function AdminAgentsPage({ searchParams }: Props) {
                 </tr>
               ))}
               {agents.length === 0 && (
-                <tr><td colSpan={7} className="px-5 py-12 text-center text-gray-400 text-sm">No agents found</td></tr>
+                <tr><td colSpan={8} className="px-5 py-12 text-center text-gray-400 text-sm">No agents found</td></tr>
               )}
             </tbody>
           </table>

@@ -1,8 +1,8 @@
 'use server';
 
 import { getServerSession } from '@/lib/session';
-import { AgentLeadSchema } from '@shinebuild/shared';
-import type { AgentLeadInput } from '@shinebuild/shared';
+import { AgentDirectLeadSchema } from '@shinebuild/shared';
+import type { AgentDirectLeadInput } from '@shinebuild/shared';
 import type { GeoData } from '@/components/shared/GeoCapture';
 
 interface SubmitResult {
@@ -48,7 +48,7 @@ export async function getServiceItems(): Promise<Array<{ id: string; name: strin
   } catch { return []; }
 }
 
-// Step 2: Agent completes lead with geo, photos, services, notes
+// Step 2: Agent completes lead with geo, photos, services, notes (QR flow)
 export async function completeAgentLeadDetails(
   leadId: string,
   details: { geo: GeoData; photos: string[]; services: string[]; agentNotes: string }
@@ -78,79 +78,106 @@ export async function completeAgentLeadDetails(
   }
 }
 
-export async function submitAgentLead(input: AgentLeadInput): Promise<SubmitResult> {
+// Direct entry: agent submits a complete lead WITHOUT customer-side QR scan.
+// Requires the agent's user doc to have directEntryEnabled === true (set by superadmin).
+export async function submitAgentDirectLead(input: AgentDirectLeadInput): Promise<SubmitResult> {
   const session = await getServerSession();
   if (!session || session.role !== 'agent') return { error: 'Unauthorized' };
 
-  const parsed = AgentLeadSchema.safeParse(input);
+  const parsed = AgentDirectLeadSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.errors[0]?.message ?? 'Invalid input' };
   }
+  const data = parsed.data;
 
   try {
-    // Call Cloud Function via Firebase Admin (server-to-server)
-    // In production this calls the deployed Cloud Function
-    // For now we call Firestore directly as server action
     const { getAdminDb } = await import('@/lib/firebase-server');
+    const { COLLECTIONS } = await import('@shinebuild/firebase');
     const { FieldValue, Timestamp } = await import('firebase-admin/firestore');
-    const { maskName, maskPhone, sha256Hex } = await import('@shinebuild/shared');
+    const { maskName, maskPhone, maskEmail } = await import('@shinebuild/shared');
     const { getNextStaffRoundRobin } = await import('@/lib/round-robin');
 
     const db = getAdminDb();
 
-    // Duplicate detection would query by normalized phone — skipped here (no customer phone in direct entry)
-    const leadRef = db.collection('leads').doc();
+    // Re-check permission server-side — never trust the client.
+    const userSnap = await db.collection(COLLECTIONS.USERS).doc(session.uid).get();
+    const userData = userSnap.data();
+    if (!userSnap.exists || userData?.['role'] !== 'agent') return { error: 'Unauthorized' };
+    if (userData?.['status'] !== 'approved') return { error: 'Account not active' };
+    if (userData?.['directEntryEnabled'] !== true) {
+      return { error: 'Direct lead entry is not enabled for your account. Use the QR flow.' };
+    }
+
+    // Duplicate detection by phone
+    const dupSnap = await db
+      .collection(COLLECTIONS.LEADS)
+      .where('customer.phoneE164', '==', data.customerPhone)
+      .limit(1)
+      .get();
+    const isDuplicate = !dupSnap.empty;
+    const duplicateOfLeadId = isDuplicate ? dupSnap.docs[0]!.id : undefined;
+
+    const assignedStaffIds = await getNextStaffRoundRobin()
+      .then((s) => (s ? [s] : []))
+      .catch(() => []);
+
+    const leadRef = db.collection(COLLECTIONS.LEADS).doc();
     const leadId = leadRef.id;
     const referenceId = leadId.slice(-6).toUpperCase();
-
-    const now = FieldValue.serverTimestamp();
+    const nowTs = Timestamp.now();
+    const initialStatus = isDuplicate ? 'duplicate' : 'new';
 
     await leadRef.set({
       source: 'agent_direct',
       agentId: session.uid,
-      assignedStaffIds: await getNextStaffRoundRobin().then((s) => s ? [s] : []).catch(() => []),
-      customer: { name: '', phoneE164: '', email: null },
-      requirementNotes: input.requirementNotes,
-      city: input.city,
-      geo: input.geo,
-      photos: input.photoStoragePaths,
+      assignedStaffIds,
+      customer: {
+        name: data.customerName,
+        phoneE164: data.customerPhone,
+        email: data.customerEmail || null,
+      },
+      requirementNotes: data.requirementNotes,
+      city: data.city,
+      geo: data.geo,
+      photos: data.photoStoragePaths,
+      services: data.services,
+      agentNotes: data.agentNotes ?? '',
+      ...(duplicateOfLeadId ? { duplicateOfLeadId } : {}),
       status: {
-        current: 'new',
-        history: [{ status: 'new', at: Timestamp.now(), by: session.uid }],
+        current: initialStatus,
+        history: [{ status: initialStatus, at: nowTs, by: session.uid }],
       },
       incentive: null,
-      createdAt: now,
+      createdAt: FieldValue.serverTimestamp(),
       createdBy: session.uid,
     });
 
-    // Write agentView subcollection
-    await leadRef.collection('agentView').doc('data').set({
+    await leadRef.collection(COLLECTIONS.AGENT_VIEW).doc('data').set({
       agentId: session.uid,
       referenceId,
-      maskedName: '***',
-      maskedPhone: '***',
-      maskedEmail: null,
+      maskedName: maskName(data.customerName),
+      maskedPhone: maskPhone(data.customerPhone),
+      maskedEmail: maskEmail(data.customerEmail || null),
       source: 'agent_direct',
-      status: 'new',
+      status: initialStatus,
       incentiveAmount: 0,
-      city: input.city,
-      createdAt: now,
+      city: data.city,
+      createdAt: FieldValue.serverTimestamp(),
     });
 
-    // Audit log
-    await db.collection('audits').add({
+    await db.collection(COLLECTIONS.AUDITS).add({
       actorUid: session.uid,
       role: 'agent',
       action: 'lead.created',
       targetType: 'lead',
       targetId: leadId,
-      createdAt: now,
-      metadata: { source: 'agent_direct', city: input.city },
+      createdAt: FieldValue.serverTimestamp(),
+      metadata: { source: 'agent_direct', city: data.city, isDuplicate },
     });
 
     return { leadId };
   } catch (err: any) {
-    console.error('submitAgentLead error:', err);
+    console.error('submitAgentDirectLead error:', err);
     return { error: 'Failed to submit lead. Please try again.' };
   }
 }
