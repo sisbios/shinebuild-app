@@ -2,7 +2,7 @@ name: Deploy Shine Connect
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, dev-connect]
   workflow_dispatch:
 
 env:
@@ -61,7 +61,7 @@ jobs:
             NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
             NEXT_PUBLIC_FIREBASE_APP_ID=${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
             NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY=${{ secrets.NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY }}
-            NEXT_PUBLIC_APP_URL=${{ github.ref_name == 'main' && 'https://connect.shinebuildhub.com' || 'https://dev.connect.shinebuildhub.com' }}
+            NEXT_PUBLIC_APP_URL=${{ github.ref_name == 'main' && 'https://connect.shinebuildhub.com' || 'https://dev-connect.shinebuildhub.com' }}
 
   deploy:
     name: Deploy to leadlumer-vps
