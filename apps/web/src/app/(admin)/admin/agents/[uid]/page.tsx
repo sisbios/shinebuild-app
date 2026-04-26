@@ -77,8 +77,10 @@ export default async function AdminAgentDetailPage({ params }: Props) {
 
       <AgentActionButtons
         uid={uid}
+        agentName={agent.name}
         currentStatus={agent.status}
         leadCount={leadCount}
+        isSuperAdmin={isSuperAdmin}
       />
     </div>
   );

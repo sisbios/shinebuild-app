@@ -13,7 +13,6 @@ const STATUS_STYLE: Record<string, string> = {
   approved: 'bg-green-100 text-green-700',
   rejected: 'bg-red-100 text-red-700',
   deactivated: 'bg-gray-100 text-gray-500',
-  deleted: 'bg-rose-100 text-rose-700 line-through',
 };
 
 interface Props { searchParams: Promise<{ status?: string; sort?: string }> }
@@ -62,7 +61,7 @@ export default async function AdminAgentsPage({ searchParams }: Props) {
     else agents.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   } catch (err) { console.error('AdminAgentsPage error:', err); }
 
-  const cnts = { pending: 0, approved: 0, rejected: 0, deactivated: 0, deleted: 0 };
+  const cnts = { pending: 0, approved: 0, rejected: 0, deactivated: 0 };
   agents.forEach((a) => { if (a.status in cnts) cnts[a.status as keyof typeof cnts]++; });
 
   return (
@@ -74,7 +73,7 @@ export default async function AdminAgentsPage({ searchParams }: Props) {
 
       {/* Filter pills */}
       <div className="flex flex-wrap gap-2">
-        {(['', 'pending', 'approved', 'rejected', 'deactivated', 'deleted'] as const).map((s) => (
+        {(['', 'pending', 'approved', 'rejected', 'deactivated'] as const).map((s) => (
           <Link key={s} href={s ? `/admin/agents?status=${s}` : '/admin/agents'}
             className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
               sp.status === s || (!sp.status && s === '') ? 'brand-gradient text-white shadow-sm' : 'glass text-gray-600 hover:text-gray-900'
